@@ -5,13 +5,48 @@
 		xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
 		xmlns:local="clr-namespace:ImagePoster4DTF"
 		mc:Ignorable="d"
-		Title="MainWindow" Height="450" Width="800">
-	<Grid>
+		Title="ImagePoster4DTF" Height="450" Width="400" Background="#FF1F1F1F" Foreground="White">
+	<Grid Margin="8,8,8,8">
 		<Grid.RowDefinitions>
-			<RowDefinition />
-			<RowDefinition />
+			<RowDefinition Height="Auto"/>
+			<RowDefinition Height="Auto"/>
+			<RowDefinition Height="Auto"/>
+			<RowDefinition Height="Auto"/>
+			<RowDefinition Height="Auto"/>
+			<RowDefinition Height="Auto"/>
+			<RowDefinition Height="Auto"/>
+			<RowDefinition Height="*"/>
+			<RowDefinition Height="Auto"/>
 		</Grid.RowDefinitions>
-		<Button Grid.Row="0" Click="ButtonLogin_OnClick">Login</Button>
-		<Button Grid.Row="1" Click="ButtonCreatePost_OnClick">Create post</Button>
+		<Grid.ColumnDefinitions>
+			<ColumnDefinition Width="*"/>
+			<ColumnDefinition Width="Auto"/>
+		</Grid.ColumnDefinitions>
+
+		<RadioButton GroupName="SelectionType" IsChecked="True" Grid.Row="0" Grid.ColumnSpan="2" Content="Выберите директорию с изображениями..." Foreground="#FFB2B2B2" Margin="0,0,0,8"/>
+		<TextBox Background="#FF3C3C3C" Grid.Row="1" Grid.Column="0" Height="22" Margin="0,0,8,0" Foreground="White"/>
+		<Button Background="#FF3C3C3C" Grid.Row="1" Grid.Column="1" Content="Обзор..." Padding="2" Foreground="White"/>
+
+		<RadioButton GroupName="SelectionType" Grid.Row="2" Grid.ColumnSpan="2" Content="Выберите несколько изображений..." Foreground="#FFB2B2B2" Margin="0,8,0,8"/>
+		<TextBox IsEnabled="False" Background="#FF3C3C3C" Grid.Row="3" Grid.Column="0" Height="22" Margin="0,0,8,0" Foreground="White"/>
+		<Button IsEnabled="False" Background="#FF3C3C3C" Grid.Row="3" Grid.Column="1" Content="Обзор..." Padding="2" Foreground="White" OpacityMask="Black"/>
+
+		<!-- Какое же XAML говнище, пиздец просто. Здесь нет Hint для TextBox. -->
+		<Label Grid.Row="4" Grid.ColumnSpan="2" Content="Введите название черновика..." Foreground="#FFB2B2B2" Margin="0,16,0,8" Padding="5,5,5,0"/>
+		<TextBox Background="#FF3C3C3C" Grid.Row="5" Grid.ColumnSpan="2" Height="22" Margin="0,0,0,0" Foreground="White"/>
+
+		<Button Grid.Row="6" Grid.ColumnSpan="2" Content="Загрузить!" Padding="16" Foreground="White" Margin="0,16,0,0" FontWeight="Bold">
+			<Button.Background>
+				<RadialGradientBrush>
+					<GradientStop Color="#FF5D0000"/>
+					<GradientStop Color="#FF170000" Offset="1"/>
+				</RadialGradientBrush>
+			</Button.Background>
+		</Button>
+		
+		<Separator Grid.Row="7" Grid.ColumnSpan="2" Background="{x:Null}"/>
+
+		<Label Grid.Row="8" Grid.Column="0" Content="Вы вошли как @saber-nyan" Foreground="#FFB2B2B2" Margin="0,8,0,0" VerticalAlignment="Bottom" />
+		<Button Background="#FF3C3C3C" Grid.Row="8" Grid.Column="1" Content="Выйти" Foreground="White" Padding="2" VerticalAlignment="Bottom"/>
 	</Grid>
 </Window>
