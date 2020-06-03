@@ -7,6 +7,11 @@
 		mc:Ignorable="d"
 		Title="MainWindow" Height="450" Width="800">
 	<Grid>
-		<Button Click="ButtonLogin_OnClick">Login</Button>
+		<Grid.RowDefinitions>
+			<RowDefinition />
+			<RowDefinition />
+		</Grid.RowDefinitions>
+		<Button Grid.Row="0" Click="ButtonLogin_OnClick">Login</Button>
+		<Button Grid.Row="1" Click="ButtonCreatePost_OnClick">Create post</Button>
 	</Grid>
 </Window>

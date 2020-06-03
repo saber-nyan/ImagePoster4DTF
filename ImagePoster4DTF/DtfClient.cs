@@ -62,5 +62,18 @@ namespace ImagePoster4DTF {
 					: "Сервер вернул некорректный ответ");
 			}
 		}
+
+		public async Task<JObject> CreatePost() {
+			var writingResponse = await _client.Request("https://dtf.ru/writing?to=u&mode=ajax")
+				.WithHeader("referer", "https://dtf.ru/")
+				.WithHeader("sec-fetch-dest", "empty")
+				.WithHeader("sec-fetch-mode", "cors")
+				.WithHeader("sec-fetch-site", "same-origin")
+				.GetAsync()
+				.ReceiveString();
+			var writingJson = JObject.Parse(writingResponse);
+			Console.WriteLine($"Writing sent (post created): {writingJson}");
+			return writingJson["module.auth"] as JObject;
+		}
 	}
 }

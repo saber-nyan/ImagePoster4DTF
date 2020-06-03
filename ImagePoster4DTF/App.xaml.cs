@@ -1,10 +1,8 @@
-﻿using System.Windows;
-
-namespace ImagePoster4DTF {
+﻿namespace ImagePoster4DTF {
 	/// <summary>
 	///     Interaction logic for App.xaml
 	/// </summary>
-	public partial class App : Application {
+	public partial class App {
 		private App() {
 			ConsoleManager.Show();
 		}
