@@ -6,6 +6,13 @@
 		<UseWPF>true</UseWPF>
 		<RuntimeIdentifier>win10-x64</RuntimeIdentifier>
 		<PublishSingleFile>true</PublishSingleFile>
+		<Version>1.0.1.0</Version>
+		<Description>Массовая загрузка изображений в черновики для DTF.ru</Description>
+		<Copyright>Copyleft (э) saber-nyan</Copyright>
+		<PackageProjectUrl>https://github.com/saber-nyan/ImagePoster4DTF</PackageProjectUrl>
+		<ApplicationIcon>Properties\icon.ico</ApplicationIcon>
+		<Authors>saber-nyan</Authors>
+		<Company>Home, desu~</Company>
 	</PropertyGroup>
 
 	<ItemGroup>
