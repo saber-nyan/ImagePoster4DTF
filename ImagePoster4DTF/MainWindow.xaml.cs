@@ -1,6 +1,10 @@
 ﻿#nullable enable
 using System;
+using System.Collections.Generic;
+using System.Collections.Immutable;
+using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
@@ -206,6 +210,18 @@ namespace ImagePoster4DTF {
 			}
 		}
 
+		private void ToggleAllControls(bool enabled) {
+			DirectoryRadio.IsEnabled = enabled;
+			DirectorySelectField.IsEnabled = enabled;
+			DirectorySelect.IsEnabled = enabled;
+			FilesRadio.IsEnabled = enabled;
+			FilesSelectField.IsEnabled = enabled;
+			FilesSelect.IsEnabled = enabled;
+			DraftTitle.IsEnabled = enabled;
+			FireButton.IsEnabled = enabled;
+			LogoutButton.IsEnabled = enabled;
+		}
+
 		private void DirectoryRadio_OnChecked(object sender, RoutedEventArgs ev) {
 			ToggleMode();
 		}
@@ -237,11 +253,59 @@ namespace ImagePoster4DTF {
 		}
 
 		private async void FireButton_OnClick(object sender, RoutedEventArgs ev) {
-			// TODO
 			Console.WriteLine("!!! F I R E !!!");
-			var post = await _dtfClient.CreatePost();
-			var file = await _dtfClient.UploadFiles(FilesSelectField.Text.Split(FilesSeparator));
-			var draft = await _dtfClient.SaveDraft(DraftTitle.Text, _userId, file["result"] as JArray);
+			IEnumerable<string>? filePaths;
+			if (_directoryMode)
+				try {
+					var path = DirectorySelectField.Text;
+					// https://stackoverflow.com/a/163220/10018051
+					filePaths = await Task.Run(() => Directory
+						.EnumerateFiles(path, "*.*", SearchOption.AllDirectories)
+						.Where(s => s.EndsWith(".png", StringComparison.OrdinalIgnoreCase)
+						            || s.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase)
+						            || s.EndsWith(".gif", StringComparison.OrdinalIgnoreCase)
+						            || s.EndsWith(".webp", StringComparison.OrdinalIgnoreCase))
+						.ToImmutableList()
+					);
+				}
+				catch (Exception e) {
+					MessageBox.Show(this, $"Указан некорректный путь.\r\n{e}", "Ошибка", MessageBoxButton.OK,
+						MessageBoxImage.Error);
+					return;
+				}
+			else
+				filePaths = FilesSelectField.Text.Split(FilesSeparator);
+
+			ToggleAllControls(false);
+			try {
+				await _dtfClient.CreatePost();
+				var file = await _dtfClient.UploadFiles(filePaths);
+				var draft = await _dtfClient.SaveDraft(DraftTitle.Text, _userId, file["result"] as JArray);
+
+				DirectorySelectField.Text = "";
+				FilesSelectField.Text = "";
+				DraftTitle.Text = "";
+
+				// Открываем браузер с черновиком! https://stackoverflow.com/a/58439029/10018051
+				var psi = new ProcessStartInfo {
+					FileName = (string) draft["data"]?["entry"]?["url"]!,
+					UseShellExecute = true
+				};
+				Process.Start(psi);
+			}
+			catch (Exception e) {
+				Console.WriteLine($"Error: {e}");
+				MessageBox.Show(this, "Возникла ошибка при отправке черновика." +
+				                      " Проверьте ваше интернет-соединение и работоспособность dtf.ru," +
+				                      $" а также указанные пути.\r\n{e}", "Ошибка", MessageBoxButton.OK,
+					MessageBoxImage.Error);
+			}
+
+			ToggleAllControls(true);
+			// Возвращаем в исходное состояние, два раза переключив...
+			ToggleMode();
+			ToggleMode();
+
 			Console.WriteLine("!!! D O N E !!!");
 		}
 	}

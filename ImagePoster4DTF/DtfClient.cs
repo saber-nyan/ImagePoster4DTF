@@ -191,7 +191,7 @@ namespace ImagePoster4DTF {
 					(string) image["data"]?["color"];
 				initialData[$"entry[entry][blocks][{i}][data][items][0][image][data][external_service]"] = "";
 				initialData[$"entry[entry][blocks][{i}][data][items][0][image][render]"] = (string) image["render"];
-				initialData[$"entry[entry][blocks][{i}][data][items][0][title]"] = "Image #{i}"; // TODO
+				initialData[$"entry[entry][blocks][{i}][data][items][0][title]"] = ""; // TODO
 				initialData[$"entry[entry][blocks][{i}][data][items][0][author]"] = "";
 				initialData[$"entry[entry][blocks][{i}][data][with_border]"] = "false";
 				initialData[$"entry[entry][blocks][{i}][data][with_background]"] = "false";
