@@ -9,6 +9,7 @@ using IniParser;
 using IniParser.Exceptions;
 using IniParser.Model;
 using Microsoft.Win32;
+using Newtonsoft.Json.Linq;
 
 namespace ImagePoster4DTF {
 	/// <summary>
@@ -240,6 +241,7 @@ namespace ImagePoster4DTF {
 			Console.WriteLine("!!! F I R E !!!");
 			var post = await _dtfClient.CreatePost();
 			var file = await _dtfClient.UploadFiles(FilesSelectField.Text.Split(FilesSeparator));
+			var draft = await _dtfClient.SaveDraft(DraftTitle.Text, _userId, file["result"] as JArray);
 			Console.WriteLine("!!! D O N E !!!");
 		}
 	}

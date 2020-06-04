@@ -128,5 +128,88 @@ namespace ImagePoster4DTF {
 			Console.WriteLine($"Uploaded: {uploadJson}");
 			return uploadJson;
 		}
+
+		public async Task<JObject> SaveDraft(string title, int userId, JArray uploadedImages) {
+			var initialData = new Dictionary<string, string> {
+				{"entry[id]", "0"},
+				{"entry[user_id]", userId.ToString()},
+				{"entry[type]", "1"},
+				{"entry[title]", title},
+				{"entry[url]", ""},
+				{"entry[date]", "0"},
+				{"entry[date_str]", ""},
+				{"entry[modification_date]", "0"},
+				{"entry[modification_date_str]", ""},
+				{"entry[is_published]", "false"},
+				{"entry[subsite_id]", userId.ToString()},
+				{"entry[subsite_name]", ""},
+				{"entry[removed]", "false"},
+				{"entry[custom_style]", ""},
+				{"entry[path]", ""},
+				{"entry[forced_to_mainpage]", "false"},
+				{"entry[is_advertisement]", "false"},
+				{"entry[is_enabled_instant_articles]", "false"},
+				{"entry[is_enabled_amp]", "true"},
+				{"entry[is_approved_for_public_rss]", "false"},
+				{"entry[is_disabled_likes]", "false"},
+				{"entry[is_disabled_comments]", "false"},
+				{"entry[is_disabled_best_comments]", "false"},
+				{"entry[is_disabled_ad]", "false"},
+				{"entry[is_wide]", "false"},
+				{"entry[is_still_updating]", "false"},
+				{"entry[withheld]", "false"},
+				{"entry[locked_by_admin]", "false"},
+				{"entry[is_show_thanks]", "false"},
+				{"entry[is_clean_cover]", "0"},
+				{"entry[is_editorial]", "false"},
+				{"entry[is_disabled_apps]", "false"},
+				{"entry[is_special]", "false"},
+				{"entry[is_filled_by_editors]", "false"},
+				{"entry[is_holdonmain]", "false"},
+				{"entry[is_holdonflash]", "0"},
+				{"entry[external_access_link]", ""},
+				{"entry[attaches]", ""},
+				{"entry[announcement_links]", ""},
+				{"autosaving", "true"},
+				{"mode", "raw"}
+			};
+
+			var i = 0;
+			foreach (var image in uploadedImages) {
+				initialData[$"entry[entry][blocks][{i}][type]"] = "media";
+				initialData[$"entry[entry][blocks][{i}][cover]"] = "false";
+				initialData[$"entry[entry][blocks][{i}][data][items][0][image][type]"] = "image";
+				initialData[$"entry[entry][blocks][{i}][data][items][0][image][data][uuid]"] =
+					(string) image["data"]?["uuid"];
+				initialData[$"entry[entry][blocks][{i}][data][items][0][image][data][width]"] =
+					((int) image["data"]?["width"]).ToString();
+				initialData[$"entry[entry][blocks][{i}][data][items][0][image][data][height]"] =
+					((int) image["data"]?["height"]).ToString();
+				initialData[$"entry[entry][blocks][{i}][data][items][0][image][data][size]"] =
+					((long) image["data"]?["size"]).ToString();
+				initialData[$"entry[entry][blocks][{i}][data][items][0][image][data][color]"] =
+					(string) image["data"]?["color"];
+				initialData[$"entry[entry][blocks][{i}][data][items][0][image][data][external_service]"] = "";
+				initialData[$"entry[entry][blocks][{i}][data][items][0][image][render]"] = (string) image["render"];
+				initialData[$"entry[entry][blocks][{i}][data][items][0][title]"] = "Image #{i}"; // TODO
+				initialData[$"entry[entry][blocks][{i}][data][items][0][author]"] = "";
+				initialData[$"entry[entry][blocks][{i}][data][with_border]"] = "false";
+				initialData[$"entry[entry][blocks][{i}][data][with_background]"] = "false";
+				++i;
+			}
+
+			var saveResponse = await _client.Request("https://dtf.ru/writing/save")
+				.WithHeader("referer", "https://dtf.ru/")
+				.WithHeader("sec-fetch-dest", "empty")
+				.WithHeader("sec-fetch-mode", "cors")
+				.WithHeader("sec-fetch-site", "same-origin")
+				.WithHeader("x-js-version", "599ad322")
+				.WithHeader("x-this-is-csrf", "THIS IS SPARTA!")
+				.PostUrlEncodedAsync(initialData)
+				.ReceiveString();
+			var saveJson = JObject.Parse(saveResponse);
+			Console.WriteLine($"Saved draft: {saveJson}");
+			return saveJson;
+		}
 	}
 }
