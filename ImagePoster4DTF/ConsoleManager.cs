@@ -1,5 +1,4 @@
 using System;
-using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Reflection;
@@ -11,7 +10,7 @@ namespace ImagePoster4DTF {
 	public static class ConsoleManager {
 		private const string Kernel32DllName = "kernel32.dll";
 
-		public static bool HasConsole => GetConsoleWindow() != IntPtr.Zero;
+		private static bool HasConsole => GetConsoleWindow() != IntPtr.Zero;
 
 		[DllImport(Kernel32DllName)]
 		private static extern bool AllocConsole();
@@ -21,9 +20,6 @@ namespace ImagePoster4DTF {
 
 		[DllImport(Kernel32DllName)]
 		private static extern IntPtr GetConsoleWindow();
-
-		[DllImport(Kernel32DllName)]
-		private static extern int GetConsoleOutputCP();
 
 		/// <summary>
 		///     Creates a new console instance if the process is not attached to a console already.
@@ -48,13 +44,6 @@ namespace ImagePoster4DTF {
 #endif
 		}
 
-		public static void Toggle() {
-			if (HasConsole)
-				Hide();
-			else
-				Show();
-		}
-
 		[SuppressMessage("ReSharper", "InconsistentNaming")]
 		private static void InvalidateOutAndError() {
 			var type = typeof(Console);
@@ -68,10 +57,10 @@ namespace ImagePoster4DTF {
 			var _InitializeStdOutError = type.GetMethod("InitializeStdOutError",
 				BindingFlags.Static | BindingFlags.NonPublic);
 
-			_out.SetValue(null, null);
-			_error.SetValue(null, null);
+			_out?.SetValue(null, null);
+			_error?.SetValue(null, null);
 
-			_InitializeStdOutError.Invoke(null, new object[] {true});
+			_InitializeStdOutError?.Invoke(null, new object[] {true});
 		}
 
 		private static void SetOutAndErrorNull() {

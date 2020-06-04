@@ -6,11 +6,12 @@ namespace ImagePoster4DTF {
 	/// </summary>
 	public partial class App {
 		private App() {
-			try
-			{
+			try {
 				ConsoleManager.Show();
 			}
-			catch (Exception) { }
+			catch (Exception) {
+				// ignored
+			}
 		}
 	}
 }
