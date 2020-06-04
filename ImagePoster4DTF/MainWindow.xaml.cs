@@ -8,14 +8,25 @@ using System.Windows.Input;
 using IniParser;
 using IniParser.Exceptions;
 using IniParser.Model;
+using Microsoft.Win32;
 
 namespace ImagePoster4DTF {
 	/// <summary>
 	///     Interaction logic for MainWindow.xaml
 	/// </summary>
 	public partial class MainWindow {
-		private static readonly DtfClient DtfClient = new DtfClient();
+		private const string SettingsFilePath = "dtf_settings.ini";
+
+		private const string
+			FilesSeparator = ", "; // TODO: Если в имени файла будут запятая и пробел, случатся плохие вещи
+
+		private static DtfClient _dtfClient = new DtfClient();
 		private static readonly FileIniDataParser IniParser = new FileIniDataParser();
+
+		// На самом деле true, но при инициализации ToggleMode() вызывается один раз, что меняет значение этого флажка
+		// ReSharper disable once RedundantDefaultMemberInitializer
+		private bool _directoryMode = false;
+
 		private IniData? _settings;
 
 		public MainWindow() {
@@ -28,7 +39,7 @@ namespace ImagePoster4DTF {
 			if (_settings != null && _settings.Sections.ContainsSection("Cookies") &&
 			    _settings.Global.ContainsKey("username")) {
 				var username = _settings.Global["username"];
-				DtfClient.LoadCookies(_settings.Sections["Cookies"].GetEnumerator());
+				_dtfClient.LoadCookies(_settings.Sections["Cookies"].GetEnumerator());
 				LoggedAs.Content = $"Вы вошли как @{username}";
 				LoginOverlay.Visibility = Visibility.Collapsed;
 			}
@@ -42,7 +53,7 @@ namespace ImagePoster4DTF {
 			await Task.Run(() => {
 				try {
 					Console.WriteLine("Reading persistent storage...");
-					_settings = IniParser.ReadFile("dtf_settings.ini", Encoding.UTF8);
+					_settings = IniParser.ReadFile(SettingsFilePath, Encoding.UTF8);
 					Console.WriteLine("...successful");
 				}
 				catch (FileNotFoundException) {
@@ -51,7 +62,7 @@ namespace ImagePoster4DTF {
 				catch (ParsingException) {
 					Console.WriteLine("Error: file is invalid! Deleting.");
 					try {
-						File.Delete("dtf_settings.ini");
+						File.Delete(SettingsFilePath);
 					}
 					catch (Exception) {
 						// ignored
@@ -67,7 +78,7 @@ namespace ImagePoster4DTF {
 			await Task.Run(() => {
 				try {
 					Console.WriteLine("Writing persistent storage...");
-					IniParser.WriteFile("dtf_settings.ini", _settings, Encoding.UTF8);
+					IniParser.WriteFile(SettingsFilePath, _settings, Encoding.UTF8);
 					Console.WriteLine("...successful");
 				}
 				catch (UnauthorizedAccessException) {
@@ -79,6 +90,17 @@ namespace ImagePoster4DTF {
 					Console.WriteLine($"Error: unknown {e}");
 					MessageBox.Show(this, $"Невозможно сохранить настройки: неизвестная ошибка.\r\n{e}",
 						"Ошибка", MessageBoxButton.OK, MessageBoxImage.Warning);
+				}
+			});
+		}
+
+		private static async Task DeleteSettings() {
+			await Task.Run(() => {
+				try {
+					File.Delete(SettingsFilePath);
+				}
+				catch {
+					// ignored
 				}
 			});
 		}
@@ -114,13 +136,13 @@ namespace ImagePoster4DTF {
 			}
 
 			try {
-				var profile = await DtfClient.Login(email, password);
+				var profile = await _dtfClient.Login(email, password);
 				var username = (string) profile["name"]!;
 				LoggedAs.Content = $"Вы вошли как @{username}";
 
 				_settings!.Global["username"] = username;
 				_settings.Sections.AddSection("Cookies");
-				foreach (var (key, value) in DtfClient.SaveCookies())
+				foreach (var (key, value) in _dtfClient.SaveCookies())
 					_settings.Sections["Cookies"].AddKey(key, value.Value);
 
 				await WriteSettings();
@@ -128,7 +150,7 @@ namespace ImagePoster4DTF {
 			}
 			catch (ApplicationException e) {
 				Console.WriteLine($"Failed to auth: {e}");
-				MessageBox.Show(this, "Неправильная почта или пароль.", "Ошибка", MessageBoxButton.OK,
+				MessageBox.Show(this, e.Message, "Ошибка", MessageBoxButton.OK,
 					MessageBoxImage.Error);
 			}
 			catch (Exception e) {
@@ -144,6 +166,66 @@ namespace ImagePoster4DTF {
 
 		private async void Password_OnKeyDown(object sender, KeyEventArgs ev) {
 			if (ev.Key == Key.Return || ev.Key == Key.Enter) await Login();
+		}
+
+		private async void LogoutButton_OnClick(object sender, RoutedEventArgs ev) {
+			_dtfClient = new DtfClient();
+			await DeleteSettings();
+			LoggedAs.Content = "Вы не вошли";
+			LoginOverlay.Visibility = Visibility.Visible;
+		}
+
+		private void ToggleMode() {
+			try {
+				Console.WriteLine($"Was _directoryMode={_directoryMode}");
+				_directoryMode = !_directoryMode;
+
+				if (_directoryMode) {
+					DirectorySelectField.IsEnabled = true;
+					DirectorySelect.IsEnabled = true;
+					FilesSelectField.IsEnabled = false;
+					FilesSelect.IsEnabled = false;
+				}
+				else {
+					DirectorySelectField.IsEnabled = false;
+					DirectorySelect.IsEnabled = false;
+					FilesSelectField.IsEnabled = true;
+					FilesSelect.IsEnabled = true;
+				}
+			}
+			catch {
+				// ignored
+			}
+		}
+
+		private void DirectoryRadio_OnChecked(object sender, RoutedEventArgs ev) {
+			ToggleMode();
+		}
+
+		private void FilesRadio_OnChecked(object sender, RoutedEventArgs ev) {
+			ToggleMode();
+		}
+
+		private void DirectorySelect_OnClick(object sender, RoutedEventArgs ev) {
+			Console.WriteLine("Selecting directory...");
+			// TODO
+			MessageBox.Show(this, "Поскольку WPF -- говнище, здесь нет встроенного диалога выбора директории. " +
+			                      "Пожалуйста, укажите путь вручную.", "# TODO", MessageBoxButton.OK,
+				MessageBoxImage.Error);
+		}
+
+		private void FilesSelect_OnClick(object sender, RoutedEventArgs ev) {
+			Console.WriteLine("Selecting files...");
+			var fileDialog = new OpenFileDialog {
+				Filter =
+					"Изображения (*.png;*.jpg;*.jpeg;*.gif;*.webp)|*.png;*.jpg;*.jpeg;*.gif;*.webp|Все файлы (*.*)|*.*",
+				Multiselect = true,
+				Title = "Выбор изображений",
+				CheckFileExists = true
+			};
+			if (fileDialog.ShowDialog() != true) return;
+			Console.Write("Selected!");
+			FilesSelectField.Text = string.Join(FilesSeparator, fileDialog.FileNames);
 		}
 	}
 }

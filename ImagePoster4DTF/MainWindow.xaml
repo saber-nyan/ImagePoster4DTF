@@ -66,26 +66,31 @@
 					<ColumnDefinition Width="Auto" />
 				</Grid.ColumnDefinitions>
 
-				<RadioButton GroupName="SelectionType" IsChecked="True" Grid.Row="0" Grid.ColumnSpan="2"
+				<RadioButton Checked="DirectoryRadio_OnChecked" Name="DirectoryRadio" GroupName="SelectionType" IsChecked="True"
+							 Grid.Row="0" Grid.ColumnSpan="2"
 							 Content="Выберите каталог с изображениями..." Margin="0,0,0,8" />
-				<TextBox Grid.Row="1" Grid.Column="0" Height="22" Margin="0,0,8,0" />
-				<Button Grid.Row="1" Grid.Column="1" Content="Обзор..." />
+				<TextBox Name="DirectorySelectField" Grid.Row="1" Grid.Column="0" Height="28" Margin="0,0,8,0" />
+				<Button Name="DirectorySelect" Click="DirectorySelect_OnClick" Grid.Row="1" Grid.Column="1" Content="Обзор..." />
 
-				<RadioButton GroupName="SelectionType" Grid.Row="2" Grid.ColumnSpan="2" Grid.Column="0"
+				<RadioButton Checked="FilesRadio_OnChecked" Name="FilesRadio" GroupName="SelectionType" Grid.Row="2"
+							 Grid.ColumnSpan="2" Grid.Column="0"
 							 Content="Выберите несколько изображений..." Margin="0,8,0,8" />
-				<TextBox IsEnabled="False" Grid.Row="3" Grid.Column="0" Height="22" Margin="0,0,8,0" />
-				<Button IsEnabled="False" Grid.Row="3" Grid.Column="1" Content="Обзор..." />
+				<TextBox Name="FilesSelectField" IsEnabled="False" Grid.Row="3" Grid.Column="0" Height="28" Margin="0,0,8,0" />
+				<Button Name="FilesSelect" Click="FilesSelect_OnClick" IsEnabled="False" Grid.Row="3" Grid.Column="1"
+						Content="Обзор..." />
 
 				<!-- Какое же XAML говнище, пиздец просто. Здесь нет Hint для TextBox. -->
-				<TextBox Grid.Row="4" Grid.ColumnSpan="2" Grid.Column="0" Margin="0,16,0,0"
+				<TextBox Name="DraftTitle" Grid.Row="4" Grid.ColumnSpan="2" Grid.Column="0" Margin="0,16,0,0"
 						 materialDesign:HintAssist.Hint="Название черновика" materialDesign:HintAssist.IsFloating="True" />
 
-				<Button Grid.Row="5" Grid.ColumnSpan="2" Grid.Column="0" Padding="8" Height="64" Margin="0,32,0,8"
+				<Button Name="FireButton" Grid.Row="5" Grid.ColumnSpan="2" Grid.Column="0" Padding="8" Height="64"
+						Margin="0,32,0,8"
 						Content="Загрузить!" FontSize="22" VerticalAlignment="Top" />
 
 				<Label Grid.Row="6" Grid.Column="0" Name="LoggedAs" Content="Вы не вошли" Margin="0,4,0,0"
 					   VerticalAlignment="Stretch" />
-				<Button Grid.Row="6" Grid.Column="1" Content="Выйти" VerticalAlignment="Bottom" />
+				<Button Name="LogoutButton" Click="LogoutButton_OnClick" Grid.Row="6" Grid.Column="1" Content="Выйти"
+						VerticalAlignment="Bottom" />
 			</Grid>
 		</materialDesign:Card>
 	</Grid>
