@@ -156,6 +156,7 @@ namespace ImagePoster4DTF {
 				foreach (var (key, value) in _dtfClient.SaveCookies())
 					_settings.Sections["Cookies"].AddKey(key, value.Value);
 				_settings!.Global["user_id"] = (string) profile["id"]!;
+				_userId = Convert.ToInt32((string) profile["id"]!);
 
 				await WriteSettings();
 				LoginOverlay.Visibility = Visibility.Collapsed;
@@ -253,60 +254,66 @@ namespace ImagePoster4DTF {
 		}
 
 		private async void FireButton_OnClick(object sender, RoutedEventArgs ev) {
-			Console.WriteLine("!!! F I R E !!!");
-			IEnumerable<string>? filePaths;
-			if (_directoryMode)
+			try {
+				Console.WriteLine("!!! F I R E !!!");
+				IEnumerable<string>? filePaths;
+				if (_directoryMode)
+					try {
+						var path = DirectorySelectField.Text;
+						// https://stackoverflow.com/a/163220/10018051
+						filePaths = await Task.Run(() => Directory
+							.EnumerateFiles(path, "*.*", SearchOption.AllDirectories)
+							.Where(s => s.EndsWith(".png", StringComparison.OrdinalIgnoreCase)
+										|| s.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase)
+										|| s.EndsWith(".gif", StringComparison.OrdinalIgnoreCase)
+										|| s.EndsWith(".webp", StringComparison.OrdinalIgnoreCase))
+							.ToImmutableList()
+						);
+					}
+					catch (Exception e) {
+						MessageBox.Show(this, $"Указан некорректный путь.\r\n{e}", "Ошибка", MessageBoxButton.OK,
+							MessageBoxImage.Error);
+						return;
+					}
+				else
+					filePaths = FilesSelectField.Text.Split(FilesSeparator);
+
+				ToggleAllControls(false);
 				try {
-					var path = DirectorySelectField.Text;
-					// https://stackoverflow.com/a/163220/10018051
-					filePaths = await Task.Run(() => Directory
-						.EnumerateFiles(path, "*.*", SearchOption.AllDirectories)
-						.Where(s => s.EndsWith(".png", StringComparison.OrdinalIgnoreCase)
-						            || s.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase)
-						            || s.EndsWith(".gif", StringComparison.OrdinalIgnoreCase)
-						            || s.EndsWith(".webp", StringComparison.OrdinalIgnoreCase))
-						.ToImmutableList()
-					);
+					await _dtfClient.CreatePost();
+					var file = await _dtfClient.UploadFiles(filePaths);
+					var draft = await _dtfClient.SaveDraft(DraftTitle.Text, _userId, file["result"] as JArray);
+
+					DirectorySelectField.Text = "";
+					FilesSelectField.Text = "";
+					DraftTitle.Text = "";
+
+					// Открываем браузер с черновиком! https://stackoverflow.com/a/58439029/10018051
+					Console.WriteLine($"DATA IS {draft}");
+					var psi = new ProcessStartInfo {
+						FileName = (string) draft["data"]?["entry"]?["url"]!,
+						UseShellExecute = true
+					};
+					Process.Start(psi);
 				}
 				catch (Exception e) {
-					MessageBox.Show(this, $"Указан некорректный путь.\r\n{e}", "Ошибка", MessageBoxButton.OK,
+					Console.WriteLine($"Error: {e}");
+					MessageBox.Show(this, "Возникла ошибка при отправке черновика." +
+										  " Проверьте ваше интернет-соединение и работоспособность dtf.ru," +
+										  $" а также указанные пути.\r\n{e}", "Ошибка", MessageBoxButton.OK,
 						MessageBoxImage.Error);
-					return;
 				}
-			else
-				filePaths = FilesSelectField.Text.Split(FilesSeparator);
 
-			ToggleAllControls(false);
-			try {
-				await _dtfClient.CreatePost();
-				var file = await _dtfClient.UploadFiles(filePaths);
-				var draft = await _dtfClient.SaveDraft(DraftTitle.Text, _userId, file["result"] as JArray);
+				ToggleAllControls(true);
+				// Возвращаем в исходное состояние, два раза переключив...
+				ToggleMode();
+				ToggleMode();
 
-				DirectorySelectField.Text = "";
-				FilesSelectField.Text = "";
-				DraftTitle.Text = "";
-
-				// Открываем браузер с черновиком! https://stackoverflow.com/a/58439029/10018051
-				var psi = new ProcessStartInfo {
-					FileName = (string) draft["data"]?["entry"]?["url"]!,
-					UseShellExecute = true
-				};
-				Process.Start(psi);
-			}
-			catch (Exception e) {
-				Console.WriteLine($"Error: {e}");
-				MessageBox.Show(this, "Возникла ошибка при отправке черновика." +
-				                      " Проверьте ваше интернет-соединение и работоспособность dtf.ru," +
-				                      $" а также указанные пути.\r\n{e}", "Ошибка", MessageBoxButton.OK,
+				Console.WriteLine("!!! D O N E !!!");
+			} catch (Exception e) {
+				MessageBox.Show(this, $"FUCK: {e}", "Ошибка", MessageBoxButton.OK,
 					MessageBoxImage.Error);
 			}
-
-			ToggleAllControls(true);
-			// Возвращаем в исходное состояние, два раза переключив...
-			ToggleMode();
-			ToggleMode();
-
-			Console.WriteLine("!!! D O N E !!!");
 		}
 	}
 }
