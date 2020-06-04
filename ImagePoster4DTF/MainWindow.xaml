@@ -13,41 +13,76 @@
 		Background="{DynamicResource MaterialDesignPaper}"
 		FontFamily="{DynamicResource MaterialDesignFont}"
 		mc:Ignorable="d"
-		Title="ImagePoster4DTF" Height="400" Width="360">
-	<materialDesign:Card Padding="16" Margin="8">
-		<Grid>
-			<Grid.RowDefinitions>
-				<RowDefinition Height="Auto" />
-				<RowDefinition Height="Auto" />
-				<RowDefinition Height="Auto" />
-				<RowDefinition Height="Auto" />
-				<RowDefinition Height="Auto" />
-				<RowDefinition Height="*"/>
-				<RowDefinition Height="Auto" />
-			</Grid.RowDefinitions>
-			<Grid.ColumnDefinitions>
-				<ColumnDefinition Width="*" />
-				<ColumnDefinition Width="Auto" />
-			</Grid.ColumnDefinitions>
+		Title="ImagePoster4DTF" Height="420" Width="360">
+	
+	<Grid Name="LayoutRoot">
+		<Grid Name="LoginOverlay"
+			  Panel.ZIndex="1000"
+			  Visibility="Visible"
+			  local:VisibilityAnimation.AnimationType="Fade">
+			<Grid.Background>
+				<SolidColorBrush Color="Black" Opacity=".8" />
+			</Grid.Background>
 
-			<RadioButton GroupName="SelectionType" IsChecked="True" Grid.Row="0" Grid.ColumnSpan="2"
-						 Content="Выберите директорию с изображениями..." Margin="0,0,0,8" />
-			<TextBox Grid.Row="1" Grid.Column="0" Height="22" Margin="0,0,8,0" />
-			<Button Grid.Row="1" Grid.Column="1" Content="Обзор..." Padding="2" />
 
-			<RadioButton GroupName="SelectionType" Grid.Row="2" Grid.ColumnSpan="2" Grid.Column="0"
-						 Content="Выберите несколько изображений..." Margin="0,8,0,8" />
-			<TextBox IsEnabled="False" Grid.Row="3" Grid.Column="0" Height="22" Margin="0,0,8,0" />
-			<Button IsEnabled="False" Grid.Row="3" Grid.Column="1" Content="Обзор..." Padding="2" />
+			<materialDesign:Card Padding="20" Margin="16" VerticalAlignment="Center" HorizontalAlignment="Center">
+				<Grid>
+					<Grid.Resources>
+						<Style TargetType="Border">
+							<Setter Property="Padding" Value="8" />
+						</Style>
+					</Grid.Resources>
+					
+					<Grid.RowDefinitions>
+						<RowDefinition Height="Auto" />
+						<RowDefinition Height="Auto" />
+						<RowDefinition Height="Auto" />
+						<RowDefinition Height="Auto" />
+					</Grid.RowDefinitions>
 
-			<!-- Какое же XAML говнище, пиздец просто. Здесь нет Hint для TextBox. -->
-			<TextBox Grid.Row="4" Grid.ColumnSpan="2" Grid.Column="0" Height="22" Margin="0,16,0,0" 
-					 materialDesign:HintAssist.Hint="Название черновика"/>
-
-			<Button Grid.Row="5" Grid.ColumnSpan="2" Grid.Column="0" Padding="8" Height="64" Margin="0,32,0,0" Content="Загрузить!" FontSize="22" VerticalAlignment="Top"/>
-
-			<Label Grid.Row="6" Grid.Column="0" Content="Вы вошли как @saber-nyan" Margin="0,4,0,0" VerticalAlignment="Stretch" />
-			<Button Grid.Row="6" Grid.Column="1" Content="Выйти" Padding="2" VerticalAlignment="Bottom" />
+					<Label Grid.Row="0" HorizontalAlignment="Center" FontSize="30" Margin="0,0,0,8">Вход на DTF.ru</Label>
+					<TextBox Grid.Row="1" Name="Login" materialDesign:HintAssist.Hint="Логин" materialDesign:HintAssist.IsFloating="True" Margin="0,0,0,8"/>
+					<TextBox Grid.Row="2" Name="Passwod" materialDesign:HintAssist.Hint="Пароль" materialDesign:HintAssist.IsFloating="True" Margin="0,0,0,8"/>
+					<Button Grid.Row="3" Name="DoLogin" Margin="0,8,0,0">Войти!</Button>
+				</Grid>
+			</materialDesign:Card>
 		</Grid>
-	</materialDesign:Card>
+
+		<materialDesign:Card Padding="16" Margin="8">
+			<Grid>
+				<Grid.RowDefinitions>
+					<RowDefinition Height="Auto" />
+					<RowDefinition Height="Auto" />
+					<RowDefinition Height="Auto" />
+					<RowDefinition Height="Auto" />
+					<RowDefinition Height="Auto" />
+					<RowDefinition Height="*"/>
+					<RowDefinition Height="Auto" />
+				</Grid.RowDefinitions>
+				<Grid.ColumnDefinitions>
+					<ColumnDefinition Width="*" />
+					<ColumnDefinition Width="Auto" />
+				</Grid.ColumnDefinitions>
+
+				<RadioButton GroupName="SelectionType" IsChecked="True" Grid.Row="0" Grid.ColumnSpan="2"
+							 Content="Выберите директорию с изображениями..." Margin="0,0,0,8" />
+				<TextBox Grid.Row="1" Grid.Column="0" Height="22" Margin="0,0,8,0" />
+				<Button Grid.Row="1" Grid.Column="1" Content="Обзор..." />
+
+				<RadioButton GroupName="SelectionType" Grid.Row="2" Grid.ColumnSpan="2" Grid.Column="0"
+							 Content="Выберите несколько изображений..." Margin="0,8,0,8" />
+				<TextBox IsEnabled="False" Grid.Row="3" Grid.Column="0" Height="22" Margin="0,0,8,0" />
+				<Button IsEnabled="False" Grid.Row="3" Grid.Column="1" Content="Обзор..." />
+
+				<!-- Какое же XAML говнище, пиздец просто. Здесь нет Hint для TextBox. -->
+				<TextBox Grid.Row="4" Grid.ColumnSpan="2" Grid.Column="0" Margin="0,16,0,0" 
+						 materialDesign:HintAssist.Hint="Название черновика" materialDesign:HintAssist.IsFloating="True"/>
+
+				<Button Grid.Row="5" Grid.ColumnSpan="2" Grid.Column="0" Padding="8" Height="64" Margin="0,32,0,8" Content="Загрузить!" FontSize="22" VerticalAlignment="Top"/>
+
+				<Label Grid.Row="6" Grid.Column="0" Content="Вы вошли как @saber-nyan" Margin="0,4,0,0" VerticalAlignment="Stretch" />
+				<Button Grid.Row="6" Grid.Column="1" Content="Выйти" VerticalAlignment="Bottom" />
+			</Grid>
+		</materialDesign:Card>
+	</Grid>
 </Window>
