@@ -28,6 +28,7 @@ namespace ImagePoster4DTF {
 		private bool _directoryMode = false;
 
 		private IniData? _settings;
+		private int _userId;
 
 		public MainWindow() {
 			InitializeComponent();
@@ -37,10 +38,15 @@ namespace ImagePoster4DTF {
 			await ReadSettings();
 
 			if (_settings != null && _settings.Sections.ContainsSection("Cookies") &&
-			    _settings.Global.ContainsKey("username")) {
-				var username = _settings.Global["username"];
+			    _settings.Global.ContainsKey("username") &&
+			    _settings.Global.ContainsKey("user_id")) {
 				_dtfClient.LoadCookies(_settings.Sections["Cookies"].GetEnumerator());
+
+				var username = _settings.Global["username"];
 				LoggedAs.Content = $"Вы вошли как @{username}";
+
+				_userId = Convert.ToInt32(_settings.Global["user_id"]);
+
 				LoginOverlay.Visibility = Visibility.Collapsed;
 			}
 			else {
@@ -144,6 +150,7 @@ namespace ImagePoster4DTF {
 				_settings.Sections.AddSection("Cookies");
 				foreach (var (key, value) in _dtfClient.SaveCookies())
 					_settings.Sections["Cookies"].AddKey(key, value.Value);
+				_settings!.Global["user_id"] = (string) profile["id"]!;
 
 				await WriteSettings();
 				LoginOverlay.Visibility = Visibility.Collapsed;
@@ -224,8 +231,16 @@ namespace ImagePoster4DTF {
 				CheckFileExists = true
 			};
 			if (fileDialog.ShowDialog() != true) return;
-			Console.Write("Selected!");
+			Console.WriteLine("Selected!");
 			FilesSelectField.Text = string.Join(FilesSeparator, fileDialog.FileNames);
+		}
+
+		private async void FireButton_OnClick(object sender, RoutedEventArgs ev) {
+			// TODO
+			Console.WriteLine("!!! F I R E !!!");
+			var post = await _dtfClient.CreatePost();
+			var file = await _dtfClient.UploadFiles(FilesSelectField.Text.Split(FilesSeparator));
+			Console.WriteLine("!!! D O N E !!!");
 		}
 	}
 }

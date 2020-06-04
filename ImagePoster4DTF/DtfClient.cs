@@ -104,5 +104,29 @@ namespace ImagePoster4DTF {
 			Console.WriteLine($"Writing sent (post created): {writingJson}");
 			return writingJson["module.auth"] as JObject;
 		}
+
+		public async Task<JObject> UploadFiles(IEnumerable<string> paths) {
+			_client.WithCookie("pushVisitsCount", "-49999");
+
+			var uploadResponse = await _client.Request("https://dtf.ru/andropov/upload")
+				.WithHeader("referer", "https://dtf.ru/")
+				.WithHeader("sec-fetch-dest", "empty")
+				.WithHeader("sec-fetch-mode", "cors")
+				.WithHeader("sec-fetch-site", "same-origin")
+				.WithHeader("x-this-is-csrf", "THIS IS SPARTA!")
+				.PostMultipartAsync(mp => {
+					var i = 0;
+					foreach (var path in paths) {
+						mp.AddFile($"file_{i}", path);
+						++i;
+					}
+
+					mp.AddString("render", "false");
+				})
+				.ReceiveString();
+			var uploadJson = JObject.Parse(uploadResponse);
+			Console.WriteLine($"Uploaded: {uploadJson}");
+			return uploadJson;
+		}
 	}
 }
