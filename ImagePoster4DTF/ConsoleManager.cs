@@ -68,11 +68,6 @@ namespace ImagePoster4DTF {
 			var _InitializeStdOutError = type.GetMethod("InitializeStdOutError",
 				BindingFlags.Static | BindingFlags.NonPublic);
 
-			Debug.Assert(_out != null);
-			Debug.Assert(_error != null);
-
-			Debug.Assert(_InitializeStdOutError != null);
-
 			_out.SetValue(null, null);
 			_error.SetValue(null, null);
 

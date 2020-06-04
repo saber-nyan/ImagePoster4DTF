@@ -4,49 +4,50 @@
 		xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
 		xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
 		xmlns:local="clr-namespace:ImagePoster4DTF"
+		xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
+		TextElement.Foreground="{DynamicResource MaterialDesignBody}"
+		TextElement.FontWeight="Regular"
+		TextElement.FontSize="13"
+		TextOptions.TextFormattingMode="Ideal"
+		TextOptions.TextRenderingMode="Auto"
+		Background="{DynamicResource MaterialDesignPaper}"
+		FontFamily="{DynamicResource MaterialDesignFont}"
 		mc:Ignorable="d"
-		Title="ImagePoster4DTF" Height="450" Width="400" Background="#FF1F1F1F" Foreground="White">
-	<Grid Margin="8,8,8,8">
-		<Grid.RowDefinitions>
-			<RowDefinition Height="Auto"/>
-			<RowDefinition Height="Auto"/>
-			<RowDefinition Height="Auto"/>
-			<RowDefinition Height="Auto"/>
-			<RowDefinition Height="Auto"/>
-			<RowDefinition Height="Auto"/>
-			<RowDefinition Height="Auto"/>
-			<RowDefinition Height="*"/>
-			<RowDefinition Height="Auto"/>
-		</Grid.RowDefinitions>
-		<Grid.ColumnDefinitions>
-			<ColumnDefinition Width="*"/>
-			<ColumnDefinition Width="Auto"/>
-		</Grid.ColumnDefinitions>
+		Title="ImagePoster4DTF" Height="400" Width="360">
+	<materialDesign:Card Padding="16" Margin="8">
+		<Grid>
+			<Grid.RowDefinitions>
+				<RowDefinition Height="Auto" />
+				<RowDefinition Height="Auto" />
+				<RowDefinition Height="Auto" />
+				<RowDefinition Height="Auto" />
+				<RowDefinition Height="Auto" />
+				<RowDefinition Height="*"/>
+				<RowDefinition Height="Auto" />
+			</Grid.RowDefinitions>
+			<Grid.ColumnDefinitions>
+				<ColumnDefinition Width="*" />
+				<ColumnDefinition Width="Auto" />
+			</Grid.ColumnDefinitions>
 
-		<RadioButton GroupName="SelectionType" IsChecked="True" Grid.Row="0" Grid.ColumnSpan="2" Content="Выберите директорию с изображениями..." Foreground="#FFB2B2B2" Margin="0,0,0,8"/>
-		<TextBox Background="#FF3C3C3C" Grid.Row="1" Grid.Column="0" Height="22" Margin="0,0,8,0" Foreground="White"/>
-		<Button Background="#FF3C3C3C" Grid.Row="1" Grid.Column="1" Content="Обзор..." Padding="2" Foreground="White"/>
+			<RadioButton GroupName="SelectionType" IsChecked="True" Grid.Row="0" Grid.ColumnSpan="2"
+						 Content="Выберите директорию с изображениями..." Margin="0,0,0,8" />
+			<TextBox Grid.Row="1" Grid.Column="0" Height="22" Margin="0,0,8,0" />
+			<Button Grid.Row="1" Grid.Column="1" Content="Обзор..." Padding="2" />
 
-		<RadioButton GroupName="SelectionType" Grid.Row="2" Grid.ColumnSpan="2" Content="Выберите несколько изображений..." Foreground="#FFB2B2B2" Margin="0,8,0,8"/>
-		<TextBox IsEnabled="False" Background="#FF3C3C3C" Grid.Row="3" Grid.Column="0" Height="22" Margin="0,0,8,0" Foreground="White"/>
-		<Button IsEnabled="False" Background="#FF3C3C3C" Grid.Row="3" Grid.Column="1" Content="Обзор..." Padding="2" Foreground="White" OpacityMask="Black"/>
+			<RadioButton GroupName="SelectionType" Grid.Row="2" Grid.ColumnSpan="2" Grid.Column="0"
+						 Content="Выберите несколько изображений..." Margin="0,8,0,8" />
+			<TextBox IsEnabled="False" Grid.Row="3" Grid.Column="0" Height="22" Margin="0,0,8,0" />
+			<Button IsEnabled="False" Grid.Row="3" Grid.Column="1" Content="Обзор..." Padding="2" />
 
-		<!-- Какое же XAML говнище, пиздец просто. Здесь нет Hint для TextBox. -->
-		<Label Grid.Row="4" Grid.ColumnSpan="2" Content="Введите название черновика..." Foreground="#FFB2B2B2" Margin="0,16,0,8" Padding="5,5,5,0"/>
-		<TextBox Background="#FF3C3C3C" Grid.Row="5" Grid.ColumnSpan="2" Height="22" Margin="0,0,0,0" Foreground="White"/>
+			<!-- Какое же XAML говнище, пиздец просто. Здесь нет Hint для TextBox. -->
+			<TextBox Grid.Row="4" Grid.ColumnSpan="2" Grid.Column="0" Height="22" Margin="0,16,0,0" 
+					 materialDesign:HintAssist.Hint="Название черновика"/>
 
-		<Button Grid.Row="6" Grid.ColumnSpan="2" Content="Загрузить!" Padding="16" Foreground="White" Margin="0,16,0,0" FontWeight="Bold">
-			<Button.Background>
-				<RadialGradientBrush>
-					<GradientStop Color="#FF5D0000"/>
-					<GradientStop Color="#FF170000" Offset="1"/>
-				</RadialGradientBrush>
-			</Button.Background>
-		</Button>
-		
-		<Separator Grid.Row="7" Grid.ColumnSpan="2" Background="{x:Null}"/>
+			<Button Grid.Row="5" Grid.ColumnSpan="2" Grid.Column="0" Padding="8" Height="64" Margin="0,32,0,0" Content="Загрузить!" FontSize="22" VerticalAlignment="Top"/>
 
-		<Label Grid.Row="8" Grid.Column="0" Content="Вы вошли как @saber-nyan" Foreground="#FFB2B2B2" Margin="0,8,0,0" VerticalAlignment="Bottom" />
-		<Button Background="#FF3C3C3C" Grid.Row="8" Grid.Column="1" Content="Выйти" Foreground="White" Padding="2" VerticalAlignment="Bottom"/>
-	</Grid>
+			<Label Grid.Row="6" Grid.Column="0" Content="Вы вошли как @saber-nyan" Margin="0,4,0,0" VerticalAlignment="Stretch" />
+			<Button Grid.Row="6" Grid.Column="1" Content="Выйти" Padding="2" VerticalAlignment="Bottom" />
+		</Grid>
+	</materialDesign:Card>
 </Window>

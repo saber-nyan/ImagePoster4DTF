@@ -1,10 +1,16 @@
-﻿namespace ImagePoster4DTF {
+﻿using System;
+
+namespace ImagePoster4DTF {
 	/// <summary>
 	///     Interaction logic for App.xaml
 	/// </summary>
 	public partial class App {
 		private App() {
-			ConsoleManager.Show();
+			try
+			{
+				ConsoleManager.Show();
+			}
+			catch (Exception) { }
 		}
 	}
 }
