@@ -81,10 +81,10 @@ namespace ImagePoster4DTF {
 				: "Сервер вернул некорректный ответ");
 		}
 
-		public void LoadCookies(IEnumerator<KeyData> cookies) {
+		public void LoadCookies(IEnumerator<Property> cookies) {
 			while (cookies.MoveNext()) {
 				var cookie = cookies.Current;
-				if (cookie != null) _client.WithCookie(cookie.KeyName, cookie.Value);
+				if (cookie != null) _client.WithCookie(cookie.Key, cookie.Value);
 			}
 		}
 
