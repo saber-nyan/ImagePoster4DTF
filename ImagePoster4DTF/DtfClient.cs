@@ -4,9 +4,20 @@ using System.Net;
 using System.Threading.Tasks;
 using Flurl.Http;
 using IniParser.Model;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using Serilog;
 
 namespace ImagePoster4DTF {
+	public class InvalidResponseException : ApplicationException {
+		public InvalidResponseException(string description, int code) : base(description) {
+			Code = code;
+		}
+
+		public InvalidResponseException(string description, Exception e) : base(description, e) { }
+		public int Code { get; }
+	}
+
 	public class DtfClient {
 		private readonly FlurlClient _client = new FlurlClient().EnableCookies();
 
@@ -19,66 +30,123 @@ namespace ImagePoster4DTF {
 				.WithHeader("accept-language", "en-US,en;q=0.9")
 				.WithHeader("cache-control", "no-cache")
 				.WithHeader("pragma", "no-cache")
-				.WithHeader("sec-fetch-dest", "document")
-				.WithHeader("sec-fetch-mode", "navigate")
-				.WithHeader("sec-fetch-site", "none")
-				.WithHeader("sec-fetch-user", "?1")
-				.WithHeader("upgrade-insecure-requests", "1")
 				.WithHeader("user-agent",
-					"Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.61 Safari/537.36");
-		}
-
-		public async Task<JObject> Login(string username, string password) {
-			var firstVisitResponse = await _client.Request("https://dtf.ru/").GetAsync();
-			Console.WriteLine($"Done first visit: {firstVisitResponse}");
-
-			_client
-				.WithCookie(new Cookie("pushVisitsCount", "1", "/", ".dtf.ru"))
-				.WithCookie(new Cookie("adblock-state", "1", "/", ".dtf.ru"))
-				.WithCookie(new Cookie("audio_player_volume", "0.75", "/", ".dtf.ru"))
-				.WithCookie(new Cookie("is_news_widget_closed", "false", "/", ".dtf.ru"));
-
-			var loginResponse = await _client.Request("https://dtf.ru/auth/simple/login")
+					"Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.61 Safari/537.36")
 				.WithHeader("referer", "https://dtf.ru/")
 				.WithHeader("sec-fetch-dest", "empty")
 				.WithHeader("sec-fetch-mode", "cors")
 				.WithHeader("sec-fetch-site", "same-origin")
 				.WithHeader("x-js-version", "599ad322")
 				.WithHeader("x-this-is-csrf", "THIS IS SPARTA!")
+				.WithCookie(new Cookie("pushVisitsCount", "1", "/", ".dtf.ru"))
+				.WithCookie(new Cookie("adblock-state", "1", "/", ".dtf.ru"))
+				.WithCookie(new Cookie("audio_player_volume", "0.75", "/", ".dtf.ru"))
+				.WithCookie(new Cookie("is_news_widget_closed", "false", "/", ".dtf.ru"));
+			Log.Information("DtfClient initialized");
+		}
+
+		private static JObject ParseAndCheckJson(string responseBody) {
+			JObject parsedJson;
+			try {
+				parsedJson = JObject.Parse(responseBody);
+			}
+			catch (JsonReaderException e) {
+				var errorDescription = $"Failed to parse JSON (source string: {responseBody})";
+				Log.Error(e, errorDescription);
+				throw new InvalidResponseException(errorDescription, e);
+			}
+
+			if (!parsedJson.ContainsKey("rc")) {
+				Log.Warning($"Response does not contains code: {parsedJson}");
+				return parsedJson;
+			}
+
+			// response code
+			var codeRaw = parsedJson["rc"];
+
+			if (codeRaw.Type != JTokenType.Integer) {
+				Log.Warning($"Unknown response code type ({codeRaw.Type})");
+				return parsedJson;
+			}
+
+			var code = (int) codeRaw;
+			if (code == 200) return parsedJson; //! Successful path
+
+			Log.Error($"Server returned code {code}, aborting");
+
+			if (parsedJson.ContainsKey("rm")) { // response message
+				var reason = (string) parsedJson["rm"];
+				Log.Error($"Reason: {reason}");
+				throw new InvalidResponseException(reason, code);
+			}
+
+			Log.Error($"Unknown reason... Full JSON: {parsedJson}");
+			throw new InvalidResponseException("Сервер вернул некорректный ответ.", code);
+		}
+
+		private async Task<bool> CheckAccount() {
+			var checkResponse = await _client.Request("https://dtf.ru/auth/check?mode=raw")
+				.GetAsync()
+				.ReceiveString();
+			try {
+				ParseAndCheckJson(checkResponse);
+			}
+			catch (InvalidResponseException e) {
+				if (e.Code == 403) // returns 403 on incorrect cookie
+					return false;
+			}
+
+			return true;
+		}
+
+		public async Task<bool> LoginWithCookie(string cookie) {
+			Log.Debug($"Logging in w/ cookie len = {cookie.Length}");
+			_client.WithCookie("osnova-remember", cookie);
+			var result = await CheckAccount();
+			if (result) return true;
+
+			_client.Cookies.Remove("osnova-remember");
+			return false;
+		}
+
+		public async Task<JObject> LoginWithMail(string username, string password) {
+			Log.Debug($"Logging in w/ username = {username}, password len = {password.Length}");
+			var loginResponse = await _client.Request("https://dtf.ru/auth/simple/login")
 				.PostUrlEncodedAsync(new Dictionary<string, string> {
 					{"values[login]", username},
 					{"values[password]", password},
 					{"mode", "raw"}
 				})
 				.ReceiveString();
-			var loginJson = JObject.Parse(loginResponse);
-			Console.WriteLine($"Logged in, response: {loginJson}");
+			var loginJson = ParseAndCheckJson(loginResponse);
+			Log.Verbose($"Logged in: {loginJson}");
 
-			// Да, поля rc может не оказаться, но мы просто прокидываем все исключения наверх.
-			// Мне слишком лень городить простыню детальной обработки ошибок.
-			if ((int) loginJson["rc"] != 200) {
-				loginJson.TryGetValue("rm", out var errorDescription);
-				throw new ApplicationException(errorDescription != null
-					? (string) errorDescription
-					: "Сервер вернул некорректный ответ");
-			}
-
-			var checkResponse = await _client.Request("https://dtf.ru/auth/check?mode=raw")
-				.WithHeader("referer", "https://dtf.ru/")
-				.WithHeader("sec-fetch-dest", "empty")
-				.WithHeader("sec-fetch-mode", "cors")
-				.WithHeader("sec-fetch-site", "same-origin")
-				.GetAsync()
-				.ReceiveString();
-			var checkJson = JObject.Parse(checkResponse);
-			Console.WriteLine($"Checked, response: {checkJson}");
-
-			if ((int) checkJson["rc"] == 200) return checkJson["data"] as JObject;
-
-			checkJson.TryGetValue("rm", out var checkErrorDescription);
-			throw new ApplicationException(checkErrorDescription != null
-				? (string) checkErrorDescription
-				: "Сервер вернул некорректный ответ");
+			var result = await CheckAccount();
+			return
+			// var loginJson = JObject.Parse(loginResponse);
+			// Console.WriteLine($"Logged in, response: {loginJson}");
+			//
+			// // Да, поля rc может не оказаться, но мы просто прокидываем все исключения наверх.
+			// // Мне слишком лень городить простыню детальной обработки ошибок.
+			// if ((int) loginJson["rc"] != 200) {
+			// 	loginJson.TryGetValue("rm", out var errorDescription);
+			// 	throw new ApplicationException(errorDescription != null
+			// 		? (string) errorDescription
+			// 		: "Сервер вернул некорректный ответ");
+			// }
+			//
+			// var checkResponse = await _client.Request("https://dtf.ru/auth/check?mode=raw")
+			// 	.GetAsync()
+			// 	.ReceiveString();
+			// var checkJson = JObject.Parse(checkResponse);
+			// Console.WriteLine($"Checked, response: {checkJson}");
+			//
+			// if ((int) checkJson["rc"] == 200) return checkJson["data"] as JObject;
+			//
+			// checkJson.TryGetValue("rm", out var checkErrorDescription);
+			// throw new ApplicationException(checkErrorDescription != null
+			// 	? (string) checkErrorDescription
+			// 	: "Сервер вернул некорректный ответ");
 		}
 
 		public void LoadCookies(IEnumerator<Property> cookies) {
@@ -94,10 +162,6 @@ namespace ImagePoster4DTF {
 
 		public async Task<JObject> CreatePost() {
 			var writingResponse = await _client.Request("https://dtf.ru/writing?to=u&mode=ajax")
-				.WithHeader("referer", "https://dtf.ru/")
-				.WithHeader("sec-fetch-dest", "empty")
-				.WithHeader("sec-fetch-mode", "cors")
-				.WithHeader("sec-fetch-site", "same-origin")
 				.GetAsync()
 				.ReceiveString();
 			var writingJson = JObject.Parse(writingResponse);
@@ -109,11 +173,6 @@ namespace ImagePoster4DTF {
 			_client.WithCookie("pushVisitsCount", "-49999");
 
 			var uploadResponse = await _client.Request("https://dtf.ru/andropov/upload")
-				.WithHeader("referer", "https://dtf.ru/")
-				.WithHeader("sec-fetch-dest", "empty")
-				.WithHeader("sec-fetch-mode", "cors")
-				.WithHeader("sec-fetch-site", "same-origin")
-				.WithHeader("x-this-is-csrf", "THIS IS SPARTA!")
 				.PostMultipartAsync(mp => {
 					var i = 0;
 					foreach (var path in paths) {
@@ -199,12 +258,6 @@ namespace ImagePoster4DTF {
 			}
 
 			var saveResponse = await _client.Request("https://dtf.ru/writing/save")
-				.WithHeader("referer", "https://dtf.ru/")
-				.WithHeader("sec-fetch-dest", "empty")
-				.WithHeader("sec-fetch-mode", "cors")
-				.WithHeader("sec-fetch-site", "same-origin")
-				.WithHeader("x-js-version", "599ad322")
-				.WithHeader("x-this-is-csrf", "THIS IS SPARTA!")
 				.PostUrlEncodedAsync(initialData)
 				.ReceiveString();
 			var saveJson = JObject.Parse(saveResponse);

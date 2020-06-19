@@ -9,8 +9,7 @@
 	<Panel Name="RootLayout">
 		<Panel Name="LoginOverlay"
 			   ZIndex="1000"
-			   IsVisible="False">
-			<!-- TODO: Change visible prop to True -->
+			   IsVisible="True">
 			<Panel.Background>
 				<SolidColorBrush Color="#000000" Opacity="0.9" />
 			</Panel.Background>
