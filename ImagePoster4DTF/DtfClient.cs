@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Net;
 using System.Threading.Tasks;
 using Flurl.Http;
-using IniParser.Model;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Serilog;
@@ -17,6 +16,8 @@ namespace ImagePoster4DTF {
 		public InvalidResponseException(string description, Exception e) : base(description, e) { }
 		public int Code { get; }
 	}
+
+	public class InvalidCredentialsException : ApplicationException { }
 
 	public class DtfClient {
 		private readonly FlurlClient _client = new FlurlClient().EnableCookies();
@@ -84,29 +85,45 @@ namespace ImagePoster4DTF {
 			throw new InvalidResponseException("Сервер вернул некорректный ответ.", code);
 		}
 
-		private async Task<bool> CheckAccount() {
+		private async Task<JObject> CheckAccount() {
 			var checkResponse = await _client.Request("https://dtf.ru/auth/check?mode=raw")
 				.GetAsync()
 				.ReceiveString();
+			JObject checkJson;
 			try {
-				ParseAndCheckJson(checkResponse);
+				checkJson = ParseAndCheckJson(checkResponse);
 			}
 			catch (InvalidResponseException e) {
-				if (e.Code == 403) // returns 403 on incorrect cookie
-					return false;
+				if (e.Code == 403) { // returns 403 on incorrect cookie
+					Log.Warning("Failed to check account: invalid cookie");
+					throw new InvalidCredentialsException();
+				}
+
+				Log.Warning($"Failed to check account: unknown error {e}");
+				throw;
 			}
 
-			return true;
+			Log.Debug("Successfully checked account");
+			return checkJson;
 		}
 
-		public async Task<bool> LoginWithCookie(string cookie) {
+		public async Task<JObject> LoginWithCookie(string cookie) {
 			Log.Debug($"Logging in w/ cookie len = {cookie.Length}");
 			_client.WithCookie("osnova-remember", cookie);
-			var result = await CheckAccount();
-			if (result) return true;
+			JObject result;
+			try {
+				result = await CheckAccount();
+			}
+			catch (InvalidCredentialsException) {
+				Log.Warning("Failed to log in: invalid cookie");
+				_client.Cookies.Remove("osnova-remember");
+				throw;
+			}
 
-			_client.Cookies.Remove("osnova-remember");
-			return false;
+			if (!result.ContainsKey("data"))
+				throw new InvalidResponseException("Сервер вернул некорректный ответ.", -1);
+
+			return result["data"] as JObject;
 		}
 
 		public async Task<JObject> LoginWithMail(string username, string password) {
@@ -122,56 +139,29 @@ namespace ImagePoster4DTF {
 			Log.Verbose($"Logged in: {loginJson}");
 
 			var result = await CheckAccount();
-			return
-			// var loginJson = JObject.Parse(loginResponse);
-			// Console.WriteLine($"Logged in, response: {loginJson}");
-			//
-			// // Да, поля rc может не оказаться, но мы просто прокидываем все исключения наверх.
-			// // Мне слишком лень городить простыню детальной обработки ошибок.
-			// if ((int) loginJson["rc"] != 200) {
-			// 	loginJson.TryGetValue("rm", out var errorDescription);
-			// 	throw new ApplicationException(errorDescription != null
-			// 		? (string) errorDescription
-			// 		: "Сервер вернул некорректный ответ");
-			// }
-			//
-			// var checkResponse = await _client.Request("https://dtf.ru/auth/check?mode=raw")
-			// 	.GetAsync()
-			// 	.ReceiveString();
-			// var checkJson = JObject.Parse(checkResponse);
-			// Console.WriteLine($"Checked, response: {checkJson}");
-			//
-			// if ((int) checkJson["rc"] == 200) return checkJson["data"] as JObject;
-			//
-			// checkJson.TryGetValue("rm", out var checkErrorDescription);
-			// throw new ApplicationException(checkErrorDescription != null
-			// 	? (string) checkErrorDescription
-			// 	: "Сервер вернул некорректный ответ");
-		}
+			if (result == null) // TODO
+				return null;
 
-		public void LoadCookies(IEnumerator<Property> cookies) {
-			while (cookies.MoveNext()) {
-				var cookie = cookies.Current;
-				if (cookie != null) _client.WithCookie(cookie.Key, cookie.Value);
-			}
-		}
+			if (!result.ContainsKey("data"))
+				throw new InvalidResponseException("Сервер вернул некорректный ответ.", -1);
 
-		public IDictionary<string, Cookie> SaveCookies() {
-			return _client.Cookies;
+			return result["data"] as JObject;
 		}
 
 		public async Task<JObject> CreatePost() {
 			var writingResponse = await _client.Request("https://dtf.ru/writing?to=u&mode=ajax")
 				.GetAsync()
 				.ReceiveString();
-			var writingJson = JObject.Parse(writingResponse);
-			Console.WriteLine($"Writing sent (post created): {writingJson}");
-			return writingJson["module.auth"] as JObject;
+			var writingJson = ParseAndCheckJson(writingResponse);
+			Log.Debug($"Writing sent (post created): {writingJson}");
+			if (writingJson.ContainsKey("module.auth")) return writingJson["module.auth"] as JObject;
+
+			Log.Error("module.auth is not found in response jsons");
+			throw new InvalidResponseException("Сервер вернул некорректный ответ.", -2);
 		}
 
-		public async Task<JObject> UploadFiles(IEnumerable<string> paths) {
-			_client.WithCookie("pushVisitsCount", "-49999");
-
+		private async Task<JObject> UploadFilesChunk(IList<string> paths) {
+			Log.Verbose("Uploading new chunk of files...");
 			var uploadResponse = await _client.Request("https://dtf.ru/andropov/upload")
 				.PostMultipartAsync(mp => {
 					var i = 0;
@@ -183,9 +173,17 @@ namespace ImagePoster4DTF {
 					mp.AddString("render", "false");
 				})
 				.ReceiveString();
-			var uploadJson = JObject.Parse(uploadResponse);
-			Console.WriteLine($"Uploaded: {uploadJson}");
+			var uploadJson = ParseAndCheckJson(uploadResponse);
+			Log.Debug($"Done: {uploadJson}");
 			return uploadJson;
+		}
+
+		public async Task<JObject> UploadFiles(IList<string> paths) {
+			var result = new List<JObject>(paths.Count);
+			foreach (List<string> chunk in paths.Partition(2)) result.Add(await UploadFilesChunk(chunk));
+
+			// TODO
+			return null;
 		}
 
 		public async Task<JObject> SaveDraft(string title, int userId, JArray uploadedImages) {
@@ -237,7 +235,7 @@ namespace ImagePoster4DTF {
 			foreach (var image in uploadedImages) {
 				initialData[$"entry[entry][blocks][{i}][type]"] = "media";
 				initialData[$"entry[entry][blocks][{i}][cover]"] = "false";
-				initialData[$"entry[entry][blocks][{i}][data][items][0][image][type]"] = "image";
+				initialData[$"entry[entry][blocks][{i}][data][items][0][image][type]"] = "image"; // TODO
 				initialData[$"entry[entry][blocks][{i}][data][items][0][image][data][uuid]"] =
 					(string) image["data"]?["uuid"];
 				initialData[$"entry[entry][blocks][{i}][data][items][0][image][data][width]"] =
