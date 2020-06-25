@@ -139,8 +139,6 @@ namespace ImagePoster4DTF {
 			Log.Verbose($"Logged in: {loginJson}");
 
 			var result = await CheckAccount();
-			if (result == null) // TODO
-				return null;
 
 			if (!result.ContainsKey("data"))
 				throw new InvalidResponseException("Сервер вернул некорректный ответ.", -1);

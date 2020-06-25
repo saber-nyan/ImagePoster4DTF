@@ -15,6 +15,7 @@
 			</Panel.Background>
 
 			<Grid
+				Name="LoginLayout"
 				RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto"
 				ColumnDefinitions="*,Auto"
 				Margin="16,8,16,8"
@@ -24,11 +25,14 @@
 						   FontSize="30" HorizontalAlignment="Center" Margin="0,0,0,16"
 						   Text="Вход по почте" />
 				<TextBox Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2"
-						 Name="LoginEmail" Watermark="Почта" Margin="0,0,0,8" />
+						 Name="LoginEmail" Watermark="Почта" Margin="0,0,0,8"
+						 KeyDown="LoginByEmail_OnKeyDown" />
 				<TextBox Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2"
-						 Name="LoginPassword" Watermark="Пароль" PasswordChar="*" Margin="0,0,0,8" />
+						 Name="LoginPassword" Watermark="Пароль" PasswordChar="*" Margin="0,0,0,8"
+						 KeyDown="LoginByEmail_OnKeyDown" />
 				<Button Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="2"
-						Name="LoginByEmailExecute" Margin="0,0,0,32" Content="Войти!" />
+						Name="LoginByEmailExecute" Margin="0,0,0,32" Content="Войти!"
+						Click="LoginByEmailExecute_OnClick" />
 
 				<Separator Grid.Row="4" Grid.Column="0" Grid.ColumnSpan="2"
 						   BorderThickness="1" BorderBrush="Gray" />
@@ -39,11 +43,14 @@
 						   Text="Вход по cookie" />
 				<TextBox Grid.Row="6" Grid.Column="0"
 						 Name="LoginCookie" Watermark="Кука osnova-remember"
-						 PasswordChar="*" Margin="0,0,0,8" />
+						 PasswordChar="*" Margin="0,0,0,8"
+						 KeyDown="LoginByCookie_OnKeyDown" />
 				<Button Grid.Row="6" Grid.Column="1"
-						Name="LoginCookieHelp" Margin="0,0,0,8" Content="?" />
+						Name="LoginCookieHelp" Margin="0,0,0,8" Content="?"
+						Click="LoginCookieHelp_OnClick" />
 				<Button Grid.Row="7" Grid.Column="0" Grid.ColumnSpan="2"
-						Name="LoginByCookieExecute" Content="Войти!" />
+						Name="LoginByCookieExecute" Content="Войти!"
+						Click="LoginByCookieExecute_OnClick" />
 			</Grid>
 		</Panel>
 
