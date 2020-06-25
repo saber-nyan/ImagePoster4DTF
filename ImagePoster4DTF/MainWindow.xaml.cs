@@ -15,8 +15,10 @@ using Serilog;
 namespace ImagePoster4DTF {
 	public class MainWindow : Window {
 		private static readonly DtfClient DtfClient = new DtfClient();
+		private TextBox _loginCookie;
 		private TextBox _loginEmail;
 		private Grid _loginLayout;
+		private Panel _loginOverlay;
 		private TextBox _loginPassword;
 
 		public MainWindow() {
@@ -32,7 +34,9 @@ namespace ImagePoster4DTF {
 			AvaloniaXamlLoader.Load(this);
 			_loginEmail = this.Find<TextBox>("LoginEmail");
 			_loginPassword = this.Find<TextBox>("LoginPassword");
+			_loginCookie = this.Find<TextBox>("LoginCookie");
 			_loginLayout = this.Find<Grid>("LoginLayout");
+			_loginOverlay = this.Find<Panel>("LoginOverlay");
 		}
 
 		protected override void OnClosed(EventArgs e) {
@@ -70,6 +74,8 @@ namespace ImagePoster4DTF {
 
 			try {
 				var result = await DtfClient.LoginWithMail(email, password);
+				// TODO
+				_loginOverlay.IsVisible = false;
 			}
 			catch (FlurlHttpException e) {
 				var data = await e.GetResponseStringAsync();
@@ -91,11 +97,43 @@ namespace ImagePoster4DTF {
 			}
 
 			_loginLayout.IsEnabled = true;
-			// TODO
 		}
 
 		private async Task LoginByCookie() {
-			Log.Information("Logging in via cookie!");
+			var cookie = _loginCookie.Text;
+			Log.Information($"Logging in via cookie! Len: {cookie?.Length}");
+
+			if (string.IsNullOrWhiteSpace(cookie)) {
+				await ShowError("Поле cookie не может быть пустым.");
+				return;
+			}
+
+			_loginLayout.IsEnabled = false;
+
+			try {
+				var result = await DtfClient.LoginWithCookie(cookie);
+				_loginOverlay.IsVisible = false;
+			}
+			catch (FlurlHttpException e) {
+				var data = await e.GetResponseStringAsync();
+				Log.Error(e, $"Network/server error! With data: {data}");
+				await ShowError("Сбой сети или некорректный ответ сервера. " +
+				                $"Проверьте работоспособность DTF.ru в браузере и попробуйте еще раз.\n{e}");
+			}
+			catch (InvalidResponseException e) {
+				Log.Error(e, $"Parsing/client error! With code: {e.Code}");
+				await ShowError($"{e.Message}, код {e.Code}.");
+			}
+			catch (InvalidCredentialsException e) {
+				Log.Error(e, "Invalid credentials");
+				await ShowError("Неверная или устаревшая кука.");
+			}
+			catch (Exception e) {
+				Log.Fatal(e, "Unknown exception!");
+				await ShowError($"Неизвестная ошибка!\n{e}");
+			}
+
+			_loginLayout.IsEnabled = true;
 		}
 
 		// ReSharper disable UnusedMember.Local
