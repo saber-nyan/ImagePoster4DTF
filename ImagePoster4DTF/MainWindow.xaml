@@ -69,7 +69,8 @@
 					 Margin="0,0,8,8" />
 			<Button Grid.Row="1" Grid.Column="1"
 					Name="DirectorySelect" Content="Обзор..."
-					Margin="0,0,0,8" />
+					Margin="0,0,0,8"
+					Click="DirectorySelect_OnClick" />
 			<CheckBox Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2"
 					  Name="DirectoryIsRecursive" IsChecked="True" Content="Рекурсивно"
 					  Margin="0,0,0,16" />
@@ -81,10 +82,11 @@
 						 Checked="FilesRadio_OnChecked" />
 			<TextBox Grid.Row="4" Grid.Column="0" IsEnabled="False"
 					 Name="FilesField" Watermark="Медиафайлы"
-					 Margin="0,0,8,16" />
+					 Margin="0,0,8,16" IsReadOnly="True" />
 			<Button Grid.Row="4" Grid.Column="1" IsEnabled="False"
 					Name="FilesSelect" Content="Обзор..."
-					Margin="0,0,0,16" />
+					Margin="0,0,0,16"
+					Click="FilesSelect_OnClick" />
 
 			<CheckBox Grid.Row="5" Grid.Column="0" Grid.ColumnSpan="2"
 					  Name="IsRegexEnabled"

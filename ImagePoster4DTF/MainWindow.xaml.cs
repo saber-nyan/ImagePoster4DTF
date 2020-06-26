@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using System.Threading.Tasks;
@@ -66,6 +67,7 @@ namespace ImagePoster4DTF {
 		private Grid _regexLayout;
 		private TextBox _regexTo;
 		private string _regexToPersistence;
+		private string[] _selectedFiles;
 
 		private int _userId;
 
@@ -403,6 +405,47 @@ namespace ImagePoster4DTF {
 
 		private void IsRegexEnabled_OnClick(object sender, RoutedEventArgs ev) {
 			_regexLayout.IsEnabled = _isRegexEnabled.IsChecked ?? false;
+		}
+
+		private async void DirectorySelect_OnClick(object sender, RoutedEventArgs ev) {
+			var dialog = new OpenFolderDialog {Title = "Выберите директорию для загрузки"};
+			var result = await dialog.ShowAsync(this);
+			if (result == null) return;
+
+			Log.Information($"Selected {result}");
+			_directoryField.Text = result;
+		}
+
+		private async void FilesSelect_OnClick(object sender, RoutedEventArgs ev) {
+			var dialog = new OpenFileDialog {
+				Title = "Выберите файлы для загрузки",
+				AllowMultiple = true,
+				Filters = {
+					new FileDialogFilter {
+						Name = "Медиафайлы",
+						Extensions = {
+							"png", "jfif", "pjpeg", "jpeg", "pjp",
+							"jpg", "gif", "m4v", "mp4", "webp"
+						}
+					},
+					new FileDialogFilter {
+						Name = "Все файлы",
+						Extensions = {"*"}
+					}
+				}
+			};
+			string[] result = await dialog.ShowAsync(this);
+			if (result == null) return;
+
+			var filesCount = result.Length;
+			var pluralized = Utils.PluralizeRussian(filesCount, new List<string> {
+				"Выбран", "Выбрано", "Выбрано"
+			});
+			var pluralizedFile = Utils.PluralizeRussian(filesCount, new List<string> {
+				"файл", "файла", "файлов"
+			});
+			_filesField.Text = $"{pluralized} {filesCount} {pluralizedFile}";
+			_selectedFiles = result;
 		}
 		// ReSharper restore UnusedMember.Local
 		// ReSharper restore UnusedParameter.Local

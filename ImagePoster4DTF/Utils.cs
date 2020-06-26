@@ -24,5 +24,21 @@ namespace ImagePoster4DTF {
 			else
 				Log.Error($"Cannot open browser: unsupported platform {RuntimeInformation.OSDescription}!");
 		}
+
+		/// <summary>
+		///     Плюрализует (склоняет в зависимости от числительного) русские слова.
+		/// </summary>
+		/// <param name="rawNumber">числительное</param>
+		/// <param name="titles">массив из трех форм слова, например (Аудиозапись, Аудиозаписи, Аудиозаписей)</param>
+		/// <returns>Плюрализованное слово</returns>
+		public static string PluralizeRussian(long rawNumber, List<string> titles) {
+			var number = Math.Abs(rawNumber);
+			var cases = new[] {2, 0, 1, 1, 1, 2};
+			return titles[
+				number % 100 > 4 && number % 100 < 20
+					? 2
+					: cases[number % 10 < 5 ? number % 10 : 5]
+			];
+		}
 	}
 }
