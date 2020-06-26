@@ -107,6 +107,11 @@ namespace ImagePoster4DTF {
 			return checkJson;
 		}
 
+		public string GetCookie() {
+			_client.Cookies.TryGetValue("osnova-remember", out var cookie);
+			return cookie?.Value;
+		}
+
 		public async Task<JObject> LoginWithCookie(string cookie) {
 			Log.Debug($"Logging in w/ cookie len = {cookie.Length}");
 			_client.WithCookie("osnova-remember", cookie);

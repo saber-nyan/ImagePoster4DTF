@@ -5,7 +5,8 @@ using Serilog.Events;
 
 namespace ImagePoster4DTF {
 	internal static class Program {
-		private const string DefaultDebugTemplate = "{Level}: [{Area}] {Message} ({SourceType} #{SourceHash})";
+		private const string DefaultDebugTemplate =
+			"{Level}: [{Area}] {Message} ({SourceType} #{SourceHash}){NewLine}{Exception}";
 
 		private const string DefaultFileTemplate =
 			"{Timestamp:HH:mm:ss} - [{Area}] {Message} ({SourceType} #{SourceHash}){NewLine}{Exception}";

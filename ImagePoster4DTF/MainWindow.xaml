@@ -2,10 +2,10 @@
 		xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
 		xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
 		xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-		mc:Ignorable="d" d:DesignWidth="420" d:DesignHeight="400"
+		mc:Ignorable="d" d:DesignWidth="430" d:DesignHeight="420"
 		x:Class="ImagePoster4DTF.MainWindow"
 		Title="ImagePoster4DTF"
-		Height="420" Width="400">
+		Height="430" Width="420">
 	<Panel Name="RootLayout">
 		<Panel Name="LoginOverlay"
 			   ZIndex="1000"
@@ -55,13 +55,15 @@
 		</Panel>
 
 		<!-- MainLayout start -->
-		<Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,*,Auto"
+		<Grid Name="MainLayout"
+			  RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,*,Auto"
 			  ColumnDefinitions="*,Auto"
 			  Margin="8,8,8,8">
 			<!-- Directory selector -->
 			<RadioButton Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2"
 						 Name="DirectoryRadio" GroupName="SelectionType" IsChecked="True"
-						 Content="Выберите каталог..." Margin="0,0,0,8" />
+						 Content="Выберите каталог..." Margin="0,0,0,8"
+						 Checked="DirectoryRadio_OnChecked" />
 			<TextBox Grid.Row="1" Grid.Column="0"
 					 Name="DirectoryField" Watermark="Каталог с медиафайлами"
 					 Margin="0,0,8,8" />
@@ -75,7 +77,8 @@
 			<!-- Files selector -->
 			<RadioButton Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="2"
 						 Name="FilesRadio" GroupName="SelectionType"
-						 Content="Выберите несколько файлов..." Margin="0,0,0,8" />
+						 Content="Выберите несколько файлов..." Margin="0,0,0,8"
+						 Checked="FilesRadio_OnChecked" />
 			<TextBox Grid.Row="4" Grid.Column="0" IsEnabled="False"
 					 Name="FilesField" Watermark="Медиафайлы"
 					 Margin="0,0,8,16" />
@@ -86,8 +89,10 @@
 			<CheckBox Grid.Row="5" Grid.Column="0" Grid.ColumnSpan="2"
 					  Name="IsRegexEnabled"
 					  Content="Заменять имя файла на заголовок по регулярному выражению"
-					  Margin="0,0,0,8" />
+					  Margin="0,0,0,8"
+					  Click="IsRegexEnabled_OnClick" />
 			<Grid Grid.Row="6" Grid.Column="0" Grid.ColumnSpan="2"
+				  Name="RegexLayout"
 				  RowDefinitions="Auto"
 				  ColumnDefinitions="*,*"
 				  IsEnabled="False"
@@ -110,14 +115,17 @@
 					Name="FireButton" Content="Загрузить!" Padding="16"
 					Margin="0,0,0,8" />
 
-			<Separator Grid.Row="10" Grid.Column="0" Grid.ColumnSpan="2" />
+			<ProgressBar Grid.Row="10" Grid.Column="0" Grid.ColumnSpan="2"
+						 Name="UploadProgressBar" />
+
+			<Separator Grid.Row="11" Grid.Column="0" Grid.ColumnSpan="2" />
 
 			<!-- Bottom controls -->
-			<TextBlock Grid.Row="11" Grid.Column="0"
+			<TextBlock Grid.Row="12" Grid.Column="0"
 					   Name="AccountText" Text="Вы не вошли"
 					   VerticalAlignment="Center" />
-			<Button Grid.Row="11" Grid.Column="1"
-					Name="AccountButton" Content="Войти" />
+			<Button Grid.Row="12" Grid.Column="1"
+					Name="AccountButton" Content="Выйти" />
 		</Grid>
 	</Panel>
 </Window>
