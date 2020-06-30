@@ -1,0 +1,24 @@
+language: csharp
+mono: none
+dotnet: 3.1
+os:
+- linux
+- osx
+- windows
+
+git:
+  depth: 2
+  quiet: true
+  symlinks: true
+
+script:
+  - dotnet restore
+
+jobs:
+  include:
+    - os: linux
+      script: dotnet publish -r linux-x64 --configuration Release
+    - os: osx
+      script: dotnet publish -r osx-x64 --configuration Release
+    - os: windows
+      script: dotnet publish -r win-x64 --configuration Release
