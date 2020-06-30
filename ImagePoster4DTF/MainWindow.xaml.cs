@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
@@ -21,6 +23,12 @@ using Serilog;
 namespace ImagePoster4DTF {
 	public class MainWindow : Window {
 		private const string SettingsFilePath = "dtf_settings.ini";
+
+		private static readonly List<string> SupportedExtensions = new List<string> {
+			"png", "jfif", "pjpeg", "jpeg", "pjp",
+			"jpg", "gif", "m4v", "mp4", "webp"
+		};
+
 		private static readonly FileIniDataParser IniParser = new FileIniDataParser();
 
 		private static readonly DtfClient DtfClient = new DtfClient();
@@ -362,6 +370,133 @@ namespace ImagePoster4DTF {
 
 		// ReSharper disable UnusedMember.Local
 		// ReSharper disable UnusedParameter.Local
+		private async void FireButton_OnClick(object sender, RoutedEventArgs ev) {
+			Log.Warning("IMMA CHARGIN' MAH LAZER!");
+			_mainLayout.IsEnabled = false;
+
+			// Load files
+			List<UploadingFileInfo> files;
+			try {
+				if (_directorySelectionMode)
+					files = await LoadFilesFromDirectory();
+				else // Explicit files selection
+					files = await LoadSelectedFiles();
+			}
+			catch (FileNotFoundException e) {
+				Log.Error(e, "File not found");
+				await ShowError($"Выбранный файл не найден, проверьте пути.\n{e}");
+				_mainLayout.IsEnabled = true;
+				return;
+			}
+			catch (DirectoryNotFoundException e) {
+				Log.Error(e, "Directory not found");
+				await ShowError($"Указанный каталог не найден, проверьте пути.\n{e}");
+				_mainLayout.IsEnabled = true;
+				return;
+			}
+			catch (IOException e) {
+				Log.Error(e, "Probably incorrect dirname");
+				await ShowError($"Некорректное имя каталога.\n{e}");
+				_mainLayout.IsEnabled = true;
+				return;
+			}
+			catch (ArgumentException e) {
+				Log.Error(e, "Regex or path parsing failed");
+				await ShowError($"Некорректное регулярное выражение.\n{e}");
+				_mainLayout.IsEnabled = true;
+				return;
+			}
+
+			if (files.Count == 0) {
+				Log.Error("No files selected, aborting");
+				await ShowError("Не было найдено ни одного подходящего файла.");
+				_mainLayout.IsEnabled = true;
+				return;
+			}
+
+			// Initialize editor
+			var post = await DtfClient.CreatePost();
+
+			// Upload files
+			// TODO
+
+			// Save post
+			// TODO
+
+			_mainLayout.IsEnabled = true;
+		}
+
+		private async Task<List<UploadingFileInfo>> LoadFilesFromDirectory() {
+			var files = new List<UploadingFileInfo>();
+			var path = _directoryField.Text ?? "./";
+			var useRegex = _isRegexEnabled.IsChecked ?? false;
+			Regex regex = null;
+			string replacement = null;
+
+			await Task.Run(() => {
+				if (useRegex) {
+					regex = new Regex(_regexFrom.Text ?? "", RegexOptions.Compiled);
+					replacement = _regexTo.Text ?? "";
+				}
+
+				var recursive = _directoryIsRecursive.IsChecked ?? false;
+				foreach (var filePath in Directory.EnumerateFiles(path, "*.*", recursive
+					? SearchOption.AllDirectories
+					: SearchOption.TopDirectoryOnly)) {
+					Log.Debug($"Processing {filePath}");
+					if (!SupportedExtensions.Any(x => filePath.EndsWith(x))) {
+						Log.Debug("Does not matches, skipping");
+						continue;
+					}
+
+					var fileName = Path.GetFileName(filePath)
+					               ?? throw new FileNotFoundException("Невозможно получить имя файла.");
+					var title = "";
+					if (useRegex) {
+						title = regex.Replace(fileName, replacement);
+						Log.Debug($"{fileName} replaced to {title}");
+					}
+
+					files.Add(new UploadingFileInfo(filePath, title));
+				}
+			});
+
+			return files;
+		}
+
+		private async Task<List<UploadingFileInfo>> LoadSelectedFiles() {
+			var result = new List<UploadingFileInfo>();
+			string[] files = _selectedFiles ?? new string[0];
+			var useRegex = _isRegexEnabled.IsChecked ?? false;
+			Regex regex = null;
+			string replacement = null;
+
+			await Task.Run(() => {
+				if (useRegex) {
+					regex = new Regex(_regexFrom.Text ?? "", RegexOptions.Compiled);
+					replacement = _regexTo.Text ?? "";
+				}
+
+				foreach (var filePath in files) {
+					Log.Debug($"Processing {filePath}");
+					if (!File.Exists(filePath)) throw new FileNotFoundException("Файл не существует.");
+
+					var fileName = Path.GetFileName(filePath)
+					               ?? throw new FileNotFoundException("Невозможно получить имя файла.");
+					var title = "";
+					if (useRegex) {
+						title = regex.Replace(fileName, replacement);
+						Log.Debug($"{fileName} replaced to {title}");
+					}
+
+					result.Add(new UploadingFileInfo(filePath, title));
+				}
+			});
+
+			return result;
+		}
+
+
 		private void ToggleMode() {
 			Log.Debug($"Was _directorySelectionMode={_directorySelectionMode}");
 			_filesField.IsEnabled = _directorySelectionMode;
@@ -423,10 +558,7 @@ namespace ImagePoster4DTF {
 				Filters = {
 					new FileDialogFilter {
 						Name = "Медиафайлы",
-						Extensions = {
-							"png", "jfif", "pjpeg", "jpeg", "pjp",
-							"jpg", "gif", "m4v", "mp4", "webp"
-						}
+						Extensions = SupportedExtensions
 					},
 					new FileDialogFilter {
 						Name = "Все файлы",

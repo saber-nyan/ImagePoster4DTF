@@ -57,10 +57,8 @@ namespace ImagePoster4DTF {
 				throw new InvalidResponseException(errorDescription, e);
 			}
 
-			if (!parsedJson.ContainsKey("rc")) {
-				Log.Warning($"Response does not contains code: {parsedJson}");
+			if (!parsedJson.ContainsKey("rc")) // Log.Information($"Response does not contains code: {parsedJson}");
 				return parsedJson;
-			}
 
 			// response code
 			var codeRaw = parsedJson["rc"];
@@ -163,30 +161,17 @@ namespace ImagePoster4DTF {
 			throw new InvalidResponseException("Сервер вернул некорректный ответ.", -2);
 		}
 
-		private async Task<JObject> UploadFilesChunk(IList<string> paths) {
-			Log.Verbose("Uploading new chunk of files...");
+		private async Task<JObject> UploadFile(string path) {
+			Log.Verbose("Uploading new file...");
 			var uploadResponse = await _client.Request("https://dtf.ru/andropov/upload")
 				.PostMultipartAsync(mp => {
-					var i = 0;
-					foreach (var path in paths) {
-						mp.AddFile($"file_{i}", path);
-						++i;
-					}
-
+					mp.AddFile("file_0", path);
 					mp.AddString("render", "false");
 				})
 				.ReceiveString();
 			var uploadJson = ParseAndCheckJson(uploadResponse);
 			Log.Debug($"Done: {uploadJson}");
 			return uploadJson;
-		}
-
-		public async Task<JObject> UploadFiles(IList<string> paths) {
-			var result = new List<JObject>(paths.Count);
-			foreach (List<string> chunk in paths.Partition(2)) result.Add(await UploadFilesChunk(chunk));
-
-			// TODO
-			return null;
 		}
 
 		public async Task<JObject> SaveDraft(string title, int userId, JArray uploadedImages) {

@@ -6,10 +6,10 @@ using Serilog.Events;
 namespace ImagePoster4DTF {
 	internal static class Program {
 		private const string DefaultDebugTemplate =
-			"{Level}: [{Area}] {Message} ({SourceType} #{SourceHash}){NewLine}{Exception}";
+			"{Level}: [{Area}] {Message} ({SourceType} #{SourceHash}) {Exception}";
 
 		private const string DefaultFileTemplate =
-			"{Timestamp:HH:mm:ss} - [{Area}] {Message} ({SourceType} #{SourceHash}){NewLine}{Exception}";
+			"{Timestamp:HH:mm:ss} - [{Area}] {Message} ({SourceType} #{SourceHash}) {Exception}";
 
 		// Initialization code. Don't use any Avalonia, third-party APIs or any
 		// SynchronizationContext-reliant code before AppMain is called: things aren't initialized

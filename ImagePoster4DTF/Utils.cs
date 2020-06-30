@@ -29,7 +29,10 @@ namespace ImagePoster4DTF {
 		///     Плюрализует (склоняет в зависимости от числительного) русские слова.
 		/// </summary>
 		/// <param name="rawNumber">числительное</param>
-		/// <param name="titles">массив из трех форм слова, например (Аудиозапись, Аудиозаписи, Аудиозаписей)</param>
+		/// <param name="titles">
+		///     массив из трех форм слова: (1, 2, 20);
+		///     например (Аудиозапись, Аудиозаписи, Аудиозаписей)
+		/// </param>
 		/// <returns>Плюрализованное слово</returns>
 		public static string PluralizeRussian(long rawNumber, List<string> titles) {
 			var number = Math.Abs(rawNumber);

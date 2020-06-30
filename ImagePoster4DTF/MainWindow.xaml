@@ -115,7 +115,8 @@
 
 			<Button Grid.Row="9" Grid.Column="0" Grid.ColumnSpan="2"
 					Name="FireButton" Content="Загрузить!" Padding="16"
-					Margin="0,0,0,8" />
+					Margin="0,0,0,8"
+					Click="FireButton_OnClick" />
 
 			<ProgressBar Grid.Row="10" Grid.Column="0" Grid.ColumnSpan="2"
 						 Name="UploadProgressBar" />
