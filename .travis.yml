@@ -16,5 +16,5 @@ jobs:
       script: dotnet publish -r linux-x64 --configuration Release
     - os: osx
       script: dotnet publish -r osx-x64 --configuration Release
-    - os: windows
+    - os: linux
       script: dotnet publish -r win-x64 --configuration Release
