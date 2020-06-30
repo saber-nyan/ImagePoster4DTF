@@ -9,7 +9,7 @@ namespace ImagePoster4DTF {
 			"{Level}: [{Area}] {Message} ({SourceType} #{SourceHash}) {Exception}";
 
 		private const string DefaultFileTemplate =
-			"{Timestamp:HH:mm:ss} - [{Area}] {Message} ({SourceType} #{SourceHash}) {Exception}";
+			"{Timestamp:HH:mm:ss} - [{Area}] {Message} ({SourceType} #{SourceHash}){NewLine}{Exception}";
 
 		// Initialization code. Don't use any Avalonia, third-party APIs or any
 		// SynchronizationContext-reliant code before AppMain is called: things aren't initialized

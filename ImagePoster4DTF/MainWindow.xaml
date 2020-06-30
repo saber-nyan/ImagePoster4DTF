@@ -5,7 +5,8 @@
 		mc:Ignorable="d" d:DesignWidth="430" d:DesignHeight="420"
 		x:Class="ImagePoster4DTF.MainWindow"
 		Title="ImagePoster4DTF"
-		Height="430" Width="420">
+		Height="430" Width="420"
+		Icon="/Assets/icon.ico">
 	<Panel Name="RootLayout">
 		<Panel Name="LoginOverlay"
 			   ZIndex="1000"

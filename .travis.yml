@@ -13,8 +13,8 @@ script:
 jobs:
   include:
     - os: linux
-      script: dotnet publish -r linux-x64 --configuration Release
+      script: dotnet publish -r linux-x64 --configuration Release -p:PublishSingleFile=true
     - os: osx
-      script: dotnet publish -r osx-x64 --configuration Release
+      script: dotnet publish -r osx-x64 --configuration Release -p:PublishSingleFile=true
     - os: linux
-      script: dotnet publish -r win-x64 --configuration Release
+      script: dotnet publish -r win-x64 --configuration Release -p:PublishSingleFile=true
