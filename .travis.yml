@@ -4,6 +4,7 @@ mono: none
 branches:
   except:
     - /^untagged/
+    - /^nightly/
 
 git:
   depth: 2
@@ -51,3 +52,9 @@ jobs:
         <<: *deploy_base
         draft: false
         file: "ImagePoster4DTF_linux"
+
+before_deploy:
+  - git config --local user.name "Artoria Pendragon"
+  - git config --local user.email "saber-nyan@ya.ru"
+  - export TRAVIS_TAG=${TRAVIS_TAG:-nightly-$(git log --format=%h -1)}
+  - git tag $TRAVIS_TAG
