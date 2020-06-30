@@ -2,6 +2,10 @@ language: csharp
 mono: none
 dotnet: 3.1.301
 
+branches:
+  except:
+    - /^untagged/
+
 git:
   depth: 2
   quiet: true
@@ -19,16 +23,10 @@ jobs:
     - os: linux
       script: dotnet publish -r win-x64 --configuration Release -p:PublishSingleFile=true
     - stage: Publish GitHub release
-      before_deploy:
-        # Set up git user name and tag this commit
-        - git config --local user.name "Artoria Pendragon"
-        - git config --local user.email "saber-nyan@ya.ru"
-        - export TRAVIS_TAG=${TRAVIS_TAG:-$(date +'%Y%m%d%H%M%S')-$(git log --format=%h -1)}
-        - git tag $TRAVIS_TAG
       deploy:
         provider: releases
-        api_key:
+        edge: true
+        token:
           secure: KAhYHmeLydRgtd4u6isB3BwJQn8y7Wa5Wu5SNPIMae//gebPlkE/uz+hW8FZIEV4e0urEtK6e3PKHwtT08X+es24+tH9Pqtj6SGvtNmVltKrpZ+rIULhW3GDcGeKrh3xtRuTItm6utBMg5WL1Q3tbD6BCv9gQP+vJBruqVxi1pZ4gCrRZbdLMF3t1OYkE7KGyuq3Zpo0v8Mx6KXGvMpFmXJXNASetONSn92LhdLLPLM0oxniSUtOI2hrhbTcmHytdAozh3xAcMYJ8c8Hip6koAqWCntMFZI2BAL/uH5GmkeS7SkY8fIw3di/TyPw5KmEmvU04/f9kpOaQQKK51Ww4wBi6OJ0loFkm3IAOumZZzp8/M3k5pDVnBfse8HMbiR9yp2qhfeAZCtd6H3u8Z2Ac3zG0wFK1w0Iwwj9b3axv6Jgml2S5LhqKmeRpirH9CllxY4EGesZ0Guiu6K7wO6cqZ2GUhj1SUzKHDtXGhTb1NG/7bf4vdQUQZodLcnGMJBwHHFllKhTdeoA/xuBKdOCpW9z4c5UbdydVu0gsA0qo9pFF9Dw+oCNglWIxzCX8lu7cIVnm2gbxbDiHfvsgSwEKN5mR0FcArboGqIKAzl0Hj6CBjbT/jt+s06pdYY2VMtdVIZ2CmVGySJNl4ekYlgnA76a14dczaI0Z9Q78AgzgCY=
-        file_glob: true
         file: "ImagePoster4DTF/bin/Release/netcoreapp3.1/**/publish/*"
-        skip_cleanup: true
+        draft: true
