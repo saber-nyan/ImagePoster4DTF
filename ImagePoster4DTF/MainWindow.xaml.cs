@@ -18,6 +18,8 @@ using MessageBox.Avalonia;
 using MessageBox.Avalonia.DTO;
 using MessageBox.Avalonia.Enums;
 using MessageBox.Avalonia.Models;
+using MimeTypes.Core;
+using Newtonsoft.Json.Linq;
 using Serilog;
 
 namespace ImagePoster4DTF {
@@ -76,6 +78,7 @@ namespace ImagePoster4DTF {
 		private TextBox _regexTo;
 		private string _regexToPersistence;
 		private string[] _selectedFiles;
+		private ProgressBar _uploadProgressBar;
 
 		private int _userId;
 
@@ -166,6 +169,7 @@ namespace ImagePoster4DTF {
 			// Other
 			_isPostWatermark = this.Find<CheckBox>("IsPostWatermark");
 			_postTitle = this.Find<TextBox>("PostTitle");
+			_uploadProgressBar = this.Find<ProgressBar>("UploadProgressBar");
 
 			//! Account info
 			_accountText = this.Find<TextBlock>("AccountText");
@@ -374,6 +378,7 @@ namespace ImagePoster4DTF {
 			Log.Warning("IMMA CHARGIN' MAH LAZER!");
 			_mainLayout.IsEnabled = false;
 
+			_uploadProgressBar.IsIndeterminate = true;
 			// Load files
 			List<UploadingFileInfo> files;
 			try {
@@ -385,24 +390,28 @@ namespace ImagePoster4DTF {
 			catch (FileNotFoundException e) {
 				Log.Error(e, "File not found");
 				await ShowError($"Выбранный файл не найден, проверьте пути.\n{e}");
+				_uploadProgressBar.IsIndeterminate = false;
 				_mainLayout.IsEnabled = true;
 				return;
 			}
 			catch (DirectoryNotFoundException e) {
 				Log.Error(e, "Directory not found");
 				await ShowError($"Указанный каталог не найден, проверьте пути.\n{e}");
+				_uploadProgressBar.IsIndeterminate = false;
 				_mainLayout.IsEnabled = true;
 				return;
 			}
 			catch (IOException e) {
 				Log.Error(e, "Probably incorrect dirname");
 				await ShowError($"Некорректное имя каталога.\n{e}");
+				_uploadProgressBar.IsIndeterminate = false;
 				_mainLayout.IsEnabled = true;
 				return;
 			}
 			catch (ArgumentException e) {
 				Log.Error(e, "Regex or path parsing failed");
 				await ShowError($"Некорректное регулярное выражение.\n{e}");
+				_uploadProgressBar.IsIndeterminate = false;
 				_mainLayout.IsEnabled = true;
 				return;
 			}
@@ -410,6 +419,7 @@ namespace ImagePoster4DTF {
 			if (files.Count == 0) {
 				Log.Error("No files selected, aborting");
 				await ShowError("Не было найдено ни одного подходящего файла.");
+				_uploadProgressBar.IsIndeterminate = false;
 				_mainLayout.IsEnabled = true;
 				return;
 			}
@@ -418,10 +428,53 @@ namespace ImagePoster4DTF {
 			var post = await DtfClient.CreatePost();
 
 			// Upload files
-			// TODO
+			_uploadProgressBar.IsIndeterminate = false;
+			_uploadProgressBar.Value = 0;
+			_uploadProgressBar.Maximum = files.Count;
+			var errors = 0;
+			foreach (var file in files) {
+				Log.Debug($"Uploading {file}...");
+				try {
+					var uploadResponse = await DtfClient.UploadFile(file.Path, file.Mimetype);
+					var result = (JObject) uploadResponse["result"][0];
+					file.ResultJson = result;
+					if ((string) result["type"] == "error")
+						throw new ApplicationException("Не удалось загрузить файл.");
+
+					file.Success = true;
+					Log.Debug("...done.");
+				}
+				catch (Exception e) {
+					Log.Error(e, "...failed:");
+					errors += 1;
+				}
+
+				_uploadProgressBar.Value += 1;
+			}
+
+			if (errors != 0) {
+				var pluralizedVerb = Utils.PluralizeRussian(errors, new List<string> {
+					"был загружен", "было загружено", "было загружено"
+				});
+				var pluralized = Utils.PluralizeRussian(errors, new List<string> {
+					"файл", "файла", "файлов"
+				});
+				await ShowError($"Не {pluralizedVerb} {errors} {pluralized}.\n" +
+				                "Создание поста продолжится после закрытия этого диалога.");
+			}
 
 			// Save post
-			// TODO
+			var title = _postTitle.Text ?? "";
+			var isWatermark = _isPostWatermark.IsChecked ?? false;
+			Log.Warning("Saving!");
+			var draft = await DtfClient.SaveDraft(title, _userId, isWatermark, files);
+			var resultUrl = draft["data"]?["entry"]?["url"]?.ToString();
+			if (resultUrl == null) {
+				Log.Error($"Result url is empty! {draft}");
+				_mainLayout.IsEnabled = true;
+			}
+
+			Utils.OpenBrowser(resultUrl);
 
 			_mainLayout.IsEnabled = true;
 		}
@@ -451,13 +504,14 @@ namespace ImagePoster4DTF {
 
 					var fileName = Path.GetFileName(filePath)
 					               ?? throw new FileNotFoundException("Невозможно получить имя файла.");
+					var mimetype = MimeTypeMap.GetMimeType(Path.GetExtension(filePath));
 					var title = "";
 					if (useRegex) {
 						title = regex.Replace(fileName, replacement);
 						Log.Debug($"{fileName} replaced to {title}");
 					}
 
-					files.Add(new UploadingFileInfo(filePath, title));
+					files.Add(new UploadingFileInfo(filePath, title, mimetype));
 				}
 			});
 
@@ -483,13 +537,14 @@ namespace ImagePoster4DTF {
 
 					var fileName = Path.GetFileName(filePath)
 					               ?? throw new FileNotFoundException("Невозможно получить имя файла.");
+					var mimetype = MimeTypeMap.GetMimeType(Path.GetExtension(filePath));
 					var title = "";
 					if (useRegex) {
 						title = regex.Replace(fileName, replacement);
 						Log.Debug($"{fileName} replaced to {title}");
 					}
 
-					result.Add(new UploadingFileInfo(filePath, title));
+					result.Add(new UploadingFileInfo(filePath, title, mimetype));
 				}
 			});
 

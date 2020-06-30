@@ -161,11 +161,11 @@ namespace ImagePoster4DTF {
 			throw new InvalidResponseException("Сервер вернул некорректный ответ.", -2);
 		}
 
-		private async Task<JObject> UploadFile(string path) {
+		public async Task<JObject> UploadFile(string path, string mimetype) {
 			Log.Verbose("Uploading new file...");
 			var uploadResponse = await _client.Request("https://dtf.ru/andropov/upload")
 				.PostMultipartAsync(mp => {
-					mp.AddFile("file_0", path);
+					mp.AddFile("file_0", path, mimetype);
 					mp.AddString("render", "false");
 				})
 				.ReceiveString();
@@ -174,7 +174,8 @@ namespace ImagePoster4DTF {
 			return uploadJson;
 		}
 
-		public async Task<JObject> SaveDraft(string title, int userId, JArray uploadedImages) {
+		public async Task<JObject> SaveDraft(string title, int userId, bool watermark,
+			IEnumerable<UploadingFileInfo> uploadedFiles) {
 			var initialData = new Dictionary<string, string> {
 				{"entry[id]", "0"},
 				{"entry[user_id]", userId.ToString()},
@@ -220,10 +221,12 @@ namespace ImagePoster4DTF {
 			};
 
 			var i = 0;
-			foreach (var image in uploadedImages) {
+			foreach (var imageInfo in uploadedFiles) {
+				if (!imageInfo.Success) continue;
+				var image = imageInfo.ResultJson;
 				initialData[$"entry[entry][blocks][{i}][type]"] = "media";
 				initialData[$"entry[entry][blocks][{i}][cover]"] = "false";
-				initialData[$"entry[entry][blocks][{i}][data][items][0][image][type]"] = "image"; // TODO
+				initialData[$"entry[entry][blocks][{i}][data][items][0][image][type]"] = image["type"].ToString();
 				initialData[$"entry[entry][blocks][{i}][data][items][0][image][data][uuid]"] =
 					(string) image["data"]?["uuid"];
 				initialData[$"entry[entry][blocks][{i}][data][items][0][image][data][width]"] =
@@ -236,17 +239,42 @@ namespace ImagePoster4DTF {
 					(string) image["data"]?["color"];
 				initialData[$"entry[entry][blocks][{i}][data][items][0][image][data][external_service]"] = "";
 				initialData[$"entry[entry][blocks][{i}][data][items][0][image][render]"] = (string) image["render"];
-				initialData[$"entry[entry][blocks][{i}][data][items][0][title]"] = ""; // TODO
+				initialData[$"entry[entry][blocks][{i}][data][items][0][title]"] = imageInfo.Title ?? "";
 				initialData[$"entry[entry][blocks][{i}][data][items][0][author]"] = "";
 				initialData[$"entry[entry][blocks][{i}][data][with_border]"] = "false";
 				initialData[$"entry[entry][blocks][{i}][data][with_background]"] = "false";
 				++i;
 			}
 
+			if (watermark) {
+				initialData[$"entry[entry][blocks][{i}][type]"] = "text";
+				initialData[$"entry[entry][blocks][{i}][cover]"] = "false";
+				initialData[$"entry[entry][blocks][{i}][data][text]"] =
+					"<p>Пост сделан через <a href=\"https://github.com/saber-nyan/ImagePoster4DTF/releases/tag/v1.0.1.0?ref=dtf.ru\"" +
+					" target=\"_blank\">ImagePoster4DTF</a> при поддержке <a href=\"https://dtf.ru/u/69160-saber-nyan\"" +
+					" target=\"_blank\">saber-nyan</a> и <a href=\"https://dtf.ru/u/132253-knightmare\" target=\"_blank\">Knightmare</a>.</p>";
+				initialData[$"entry[entry][blocks][{i}][data][format]"] = "html";
+				initialData[$"entry[entry][blocks][{i}][data][text_truncated]"] = "<<<same>>>";
+				++i;
+				initialData[$"entry[entry][blocks][{i}][type]"] = "text";
+				initialData[$"entry[entry][blocks][{i}][cover]"] = "false";
+				initialData[$"entry[entry][blocks][{i}][data][text]"] =
+					"<p>Банда хейтеров очобы создана <a href=\"https://dtf.ru/u/203649-danil-sparkov\" target=\"_blank\">Данилом Спарковым</a>.</p>";
+				initialData[$"entry[entry][blocks][{i}][data][format]"] = "html";
+				initialData[$"entry[entry][blocks][{i}][data][text_truncated]"] = "<<<same>>>";
+				++i;
+				initialData[$"entry[entry][blocks][{i}][type]"] = "text";
+				initialData[$"entry[entry][blocks][{i}][cover]"] = "false";
+				initialData[$"entry[entry][blocks][{i}][data][text]"] =
+					"<p><a href=\"https://dtf.ru/tag/thisPostWasMadeByOchobaHatersGang\">#thisPostWasMadeByOchobaHatersGang</a></p>";
+				initialData[$"entry[entry][blocks][{i}][data][format]"] = "html";
+				initialData[$"entry[entry][blocks][{i}][data][text_truncated]"] = "<<<same>>>";
+			}
+
 			var saveResponse = await _client.Request("https://dtf.ru/writing/save")
 				.PostUrlEncodedAsync(initialData)
 				.ReceiveString();
-			var saveJson = JObject.Parse(saveResponse);
+			var saveJson = ParseAndCheckJson(saveResponse);
 			Console.WriteLine($"Saved draft: {saveJson}");
 			return saveJson;
 		}
