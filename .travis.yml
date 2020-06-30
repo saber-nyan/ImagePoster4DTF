@@ -1,6 +1,5 @@
 language: csharp
 mono: none
-dotnet: 3.1.301
 
 branches:
   except:
@@ -11,21 +10,26 @@ git:
   quiet: true
   symlinks: true
 
-script:
-  - dotnet restore
-
 jobs:
   include:
     - stage: "Compile for amd64 Windows"
       os: windows
-      dotnet: 3.1
-      script: dotnet publish -r win-x64 --configuration Release -p:PublishSingleFile=true
+      script:
+        - choco install dotnetcore-sdk
+        - dotnet --version
+        - dotnet publish -r win-x64 --configuration Release -p:PublishSingleFile=true
     - stage: "Compile for amd64 GNU/Linux"
       os: linux
-      script: dotnet publish -r linux-x64 --configuration Release -p:PublishSingleFile=true
+      dotnet: 3.1.301
+      script:
+        - dotnet restore
+        - dotnet publish -r linux-x64 --configuration Release -p:PublishSingleFile=true
     - stage: "Compile for amd64 macOS and deploy GitHub Release"
       os: osx
-      script: dotnet publish -r osx-x64 --configuration Release -p:PublishSingleFile=true
+      dotnet: 3.1.301
+      script:
+        - dotnet restore
+        - dotnet publish -r osx-x64 --configuration Release -p:PublishSingleFile=true
 
 
 deploy:
