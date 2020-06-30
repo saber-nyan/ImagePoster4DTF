@@ -17,25 +17,37 @@ jobs:
       script:
         - choco install dotnetcore-sdk
         - dotnet --version
-        - dotnet publish -r win-x64 --configuration Release -p:PublishSingleFile=true
-    - stage: "Compile for amd64 GNU/Linux"
-      os: linux
-      dotnet: 3.1.301
-      script:
         - dotnet restore
-        - dotnet publish -r linux-x64 --configuration Release -p:PublishSingleFile=true
-    - stage: "Compile for amd64 macOS and deploy GitHub Release"
+        - dotnet publish -r win-x64 --configuration Release -p:PublishSingleFile=true
+      deploy: &deploy_base
+        provider: releases
+        edge: true
+        token:
+          secure: KAhYHmeLydRgtd4u6isB3BwJQn8y7Wa5Wu5SNPIMae//gebPlkE/uz+hW8FZIEV4e0urEtK6e3PKHwtT08X+es24+tH9Pqtj6SGvtNmVltKrpZ+rIULhW3GDcGeKrh3xtRuTItm6utBMg5WL1Q3tbD6BCv9gQP+vJBruqVxi1pZ4gCrRZbdLMF3t1OYkE7KGyuq3Zpo0v8Mx6KXGvMpFmXJXNASetONSn92LhdLLPLM0oxniSUtOI2hrhbTcmHytdAozh3xAcMYJ8c8Hip6koAqWCntMFZI2BAL/uH5GmkeS7SkY8fIw3di/TyPw5KmEmvU04/f9kpOaQQKK51Ww4wBi6OJ0loFkm3IAOumZZzp8/M3k5pDVnBfse8HMbiR9yp2qhfeAZCtd6H3u8Z2Ac3zG0wFK1w0Iwwj9b3axv6Jgml2S5LhqKmeRpirH9CllxY4EGesZ0Guiu6K7wO6cqZ2GUhj1SUzKHDtXGhTb1NG/7bf4vdQUQZodLcnGMJBwHHFllKhTdeoA/xuBKdOCpW9z4c5UbdydVu0gsA0qo9pFF9Dw+oCNglWIxzCX8lu7cIVnm2gbxbDiHfvsgSwEKN5mR0FcArboGqIKAzl0Hj6CBjbT/jt+s06pdYY2VMtdVIZ2CmVGySJNl4ekYlgnA76a14dczaI0Z9Q78AgzgCY=
+        file: "ImagePoster4DTF/bin/Release/netcoreapp3.1/win-x64/publish/ImagePoster4DTF.exe"
+        draft: true
+        on:
+          all_branches: true
+    - stage: "Compile for amd64 macOS"
       os: osx
+      osx_image: xcode11.5
       dotnet: 3.1.301
       script:
         - dotnet restore
         - dotnet publish -r osx-x64 --configuration Release -p:PublishSingleFile=true
-
-
-deploy:
-  provider: releases
-  edge: true
-  token:
-    secure: KAhYHmeLydRgtd4u6isB3BwJQn8y7Wa5Wu5SNPIMae//gebPlkE/uz+hW8FZIEV4e0urEtK6e3PKHwtT08X+es24+tH9Pqtj6SGvtNmVltKrpZ+rIULhW3GDcGeKrh3xtRuTItm6utBMg5WL1Q3tbD6BCv9gQP+vJBruqVxi1pZ4gCrRZbdLMF3t1OYkE7KGyuq3Zpo0v8Mx6KXGvMpFmXJXNASetONSn92LhdLLPLM0oxniSUtOI2hrhbTcmHytdAozh3xAcMYJ8c8Hip6koAqWCntMFZI2BAL/uH5GmkeS7SkY8fIw3di/TyPw5KmEmvU04/f9kpOaQQKK51Ww4wBi6OJ0loFkm3IAOumZZzp8/M3k5pDVnBfse8HMbiR9yp2qhfeAZCtd6H3u8Z2Ac3zG0wFK1w0Iwwj9b3axv6Jgml2S5LhqKmeRpirH9CllxY4EGesZ0Guiu6K7wO6cqZ2GUhj1SUzKHDtXGhTb1NG/7bf4vdQUQZodLcnGMJBwHHFllKhTdeoA/xuBKdOCpW9z4c5UbdydVu0gsA0qo9pFF9Dw+oCNglWIxzCX8lu7cIVnm2gbxbDiHfvsgSwEKN5mR0FcArboGqIKAzl0Hj6CBjbT/jt+s06pdYY2VMtdVIZ2CmVGySJNl4ekYlgnA76a14dczaI0Z9Q78AgzgCY=
-  file: "ImagePoster4DTF/bin/Release/netcoreapp3.1/**/publish/*"
-  draft: true
+        - "cp ./ImagePoster4DTF/bin/Release/netcoreapp3.1/osx-x64/publish/ImagePoster4DTF ./ImagePoster4DTF_macOS"
+      deploy:
+        <<: *deploy_base
+        file: "ImagePoster4DTF_macOS"
+    - stage: "Compile for amd64 GNU/Linux and deploy GitHub Release"
+      os: linux
+      dist: bionic
+      dotnet: 3.1.301
+      script:
+        - dotnet restore
+        - dotnet publish -r linux-x64 --configuration Release -p:PublishSingleFile=true
+        - "cp ./ImagePoster4DTF/bin/Release/netcoreapp3.1/linux-x64/publish/ImagePoster4DTF ./ImagePoster4DTF_linux"
+      deploy:
+        <<: *deploy_base
+        draft: false
+        file: "ImagePoster4DTF_linux"
