@@ -18,6 +18,7 @@ jobs:
   include:
     - stage: "Compile for amd64 Windows"
       os: windows
+      dotnet: 3.1
       script: dotnet publish -r win-x64 --configuration Release -p:PublishSingleFile=true
     - stage: "Compile for amd64 GNU/Linux"
       os: linux
