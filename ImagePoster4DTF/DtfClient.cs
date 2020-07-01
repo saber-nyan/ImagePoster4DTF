@@ -250,7 +250,7 @@ namespace ImagePoster4DTF {
 				initialData[$"entry[entry][blocks][{i}][type]"] = "text";
 				initialData[$"entry[entry][blocks][{i}][cover]"] = "false";
 				initialData[$"entry[entry][blocks][{i}][data][text]"] =
-					"<p>Пост сделан через <a href=\"https://github.com/saber-nyan/ImagePoster4DTF/releases/tag/v1.0.1.0?ref=dtf.ru\"" +
+					"<p>Пост сделан через <a href=\"https://github.com/saber-nyan/ImagePoster4DTF/releases?ref=dtf.ru\"" +
 					" target=\"_blank\">ImagePoster4DTF</a> при поддержке <a href=\"https://dtf.ru/u/69160-saber-nyan\"" +
 					" target=\"_blank\">saber-nyan</a> и <a href=\"https://dtf.ru/u/132253-knightmare\" target=\"_blank\">Knightmare</a>.</p>";
 				initialData[$"entry[entry][blocks][{i}][data][format]"] = "html";
