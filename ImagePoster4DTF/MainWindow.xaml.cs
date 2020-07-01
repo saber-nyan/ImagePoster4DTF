@@ -5,7 +5,6 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
-using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
@@ -581,8 +580,8 @@ namespace ImagePoster4DTF {
 		}
 
 		private void LoginCookieHelp_OnClick(object sender, RoutedEventArgs ev) {
-			// TODO
-			Utils.OpenBrowser("https://github.com/saber-nyan/ImagePoster4DTF/");
+			Utils.OpenBrowser("https://github.com/saber-nyan/ImagePoster4DTF" +
+			                  "#%D0%B2%D1%85%D0%BE%D0%B4-%D0%BF%D0%BE-cookie");
 		}
 
 		private void DirectoryRadio_OnChecked(object sender, RoutedEventArgs ev) {
