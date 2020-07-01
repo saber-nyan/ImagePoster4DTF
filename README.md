@@ -11,7 +11,7 @@
 [![GitHub All Releases](https://img.shields.io/github/downloads-pre/saber-nyan/ImagePoster4DTF/total?color=red&style=for-the-badge)](https://github.com/saber-nyan/ImagePoster4DTF/releases/latest)
 
 1. Скачайте последний релиз по кнопке выше.
-2. Если находитесь под GNU/Linux, до дайте права на запуск: `chmod +x ./ImagePoster4DTF_linux`
+2. Если находитесь под GNU/Linux, то дайте права на запуск: `chmod +x ./ImagePoster4DTF_linux`
 3. Запустите приложение, введите свою почту и пароль как на DTF или следуйте [инструкции по вытаскиванию Cookie](#вход-по-cookie).
 4. После входа в каталоге приложения создастся файл `dtf_settings.ini`. Не передавайте и никому не показывайте его содержимое,
 иначе злоумышленник сможет воспользоваться вашим аккаунтом.
