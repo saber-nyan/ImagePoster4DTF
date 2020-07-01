@@ -28,7 +28,8 @@ jobs:
         draft: true
         tag_name: $TRAVIS_TAG
         target_commitish: $TRAVIS_COMMIT
-        name: $TRAVIS_TAG
+        name: "[$TRAVIS_TAG] Nightly release for $TRAVIS_COMMIT"
+        prerelease: true
         overwrite: true
         skip_cleanup: true
     - stage: "Compile for amd64 macOS"
