@@ -432,7 +432,7 @@ namespace ImagePoster4DTF {
 			_uploadProgressBar.Value = 0;
 			_uploadProgressBar.Maximum = files.Count;
 			var errors = 0;
-			foreach (var file in files)
+			foreach (var file in files) {
 				for (var i = 0; i < 3 && !file.Success; i++) {
 					Log.Debug($"Uploading {file} try #{i}...");
 					try {
@@ -440,11 +440,12 @@ namespace ImagePoster4DTF {
 						var result = (JObject) uploadResponse["result"][0];
 						file.ResultJson = result;
 						if ((string) result["type"] == "error") {
-							if (result["data"].Contains("error_text")
-							    && ((string) result["data"]["error_text"]).Contains("Слишком много действий")) {
-								Log.Information("Ratelimited, sleeping 2 secs!");
-								await Task.Delay(2000);
+							if (((string) result["data"]["error_text"]).Contains("Слишком много действий")) {
+								Log.Information("Ratelimited, sleeping 15 secs!");
+								await Task.Delay(15000);
 								i = 0; // Does not count as error
+
+								for (var j = 0; j < 5; j++) await DtfClient.HitRandomPost();
 							}
 
 							throw new ApplicationException("Не удалось загрузить файл.");
@@ -452,15 +453,17 @@ namespace ImagePoster4DTF {
 
 						file.Success = true;
 						Log.Debug("...done.");
+						await Task.Delay(334); // 3 requests per second
 					}
 					catch (Exception e) {
 						Log.Error(e, "...failed:");
 					}
-
-					if (!file.Success) errors += 1;
-
-					_uploadProgressBar.Value += 1;
 				}
+
+				if (!file.Success) errors += 1;
+
+				_uploadProgressBar.Value += 1;
+			}
 
 			var successfullyUploaded = (files.Count - errors).ToString();
 

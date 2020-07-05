@@ -110,6 +110,24 @@ namespace ImagePoster4DTF {
 			return cookie?.Value;
 		}
 
+		public async Task HitRandomPost() {
+			var success = false;
+			while (!success) {
+				var randomId = new Random().Next(100000, 165971);
+				try {
+					await _client.Request($"https://dtf.ru/hit/{randomId}")
+						.PostUrlEncodedAsync(new Dictionary<string, string> {
+							{"mode", "raw"}
+						})
+						.ReceiveString();
+					success = true;
+				}
+				catch (Exception e) {
+					Log.Warning(e, $"Failed to hit post {randomId}, retrying: ");
+				}
+			}
+		}
+
 		public async Task<JObject> LoginWithCookie(string cookie) {
 			Log.Debug($"Logging in w/ cookie len = {cookie.Length}");
 			_client.WithCookie("osnova-remember", cookie);
@@ -154,7 +172,7 @@ namespace ImagePoster4DTF {
 				.GetAsync()
 				.ReceiveString();
 			var writingJson = ParseAndCheckJson(writingResponse);
-			Log.Debug($"Writing sent (post created): {writingJson}");
+			// Log.Debug($"Writing sent (post created): {writingJson}");
 			if (writingJson.ContainsKey("module.auth")) return writingJson["module.auth"] as JObject;
 
 			Log.Error("module.auth is not found in response jsons");
