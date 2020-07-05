@@ -1,4 +1,6 @@
 ﻿using Avalonia;
+using Avalonia.Controls;
+using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Logging.Serilog;
 using Serilog;
 using Serilog.Events;
@@ -16,11 +18,15 @@ namespace ImagePoster4DTF {
 		// SynchronizationContext-reliant code before AppMain is called: things aren't initialized
 		// yet and stuff might break.
 		public static void Main(string[] args) {
+			ClassicDesktopStyleApplicationLifetime lifetime = null;
 			try {
-				BuildAvaloniaApp()
-					.StartWithClassicDesktopLifetime(args);
+				var builder = BuildAvaloniaApp();
+				lifetime = new ClassicDesktopStyleApplicationLifetime {ShutdownMode = ShutdownMode.OnLastWindowClose};
+				builder.SetupWithLifetime(lifetime);
+				lifetime.Start(args);
 			}
 			catch (SharpGenException) {
+				lifetime?.Dispose();
 				BuildAvaloniaApp()
 					.With(new AvaloniaNativePlatformOptions {UseGpu = false})
 					.StartWithClassicDesktopLifetime(args);
