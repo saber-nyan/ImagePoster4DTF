@@ -2,6 +2,7 @@
 using Avalonia.Logging.Serilog;
 using Serilog;
 using Serilog.Events;
+using SharpGen.Runtime;
 
 namespace ImagePoster4DTF {
 	internal static class Program {
@@ -15,8 +16,15 @@ namespace ImagePoster4DTF {
 		// SynchronizationContext-reliant code before AppMain is called: things aren't initialized
 		// yet and stuff might break.
 		public static void Main(string[] args) {
-			BuildAvaloniaApp()
-				.StartWithClassicDesktopLifetime(args);
+			try {
+				BuildAvaloniaApp()
+					.StartWithClassicDesktopLifetime(args);
+			}
+			catch (SharpGenException) {
+				BuildAvaloniaApp()
+					.With(new AvaloniaNativePlatformOptions {UseGpu = false})
+					.StartWithClassicDesktopLifetime(args);
+			}
 		}
 
 		// Avalonia configuration, don't remove; also used by visual designer.

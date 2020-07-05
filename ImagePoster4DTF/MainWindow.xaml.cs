@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
@@ -424,7 +425,7 @@ namespace ImagePoster4DTF {
 			}
 
 			// Initialize editor
-			var post = await DtfClient.CreatePost();
+			await DtfClient.CreatePost();
 
 			// Upload files
 			_uploadProgressBar.IsIndeterminate = false;
