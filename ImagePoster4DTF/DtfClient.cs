@@ -114,6 +114,7 @@ namespace ImagePoster4DTF {
 			var success = false;
 			while (!success) {
 				var randomId = new Random().Next(100000, 165971);
+				Log.Debug($"Fetching {randomId}...");
 				try {
 					await _client.Request($"https://dtf.ru/hit/{randomId}")
 						.PostUrlEncodedAsync(new Dictionary<string, string> {
@@ -125,6 +126,8 @@ namespace ImagePoster4DTF {
 				catch (Exception e) {
 					Log.Warning(e, $"Failed to hit post {randomId}, retrying: ");
 				}
+
+				await Task.Delay(334);
 			}
 		}
 

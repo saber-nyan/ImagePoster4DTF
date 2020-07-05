@@ -445,7 +445,7 @@ namespace ImagePoster4DTF {
 								await Task.Delay(15000);
 								i = 0; // Does not count as error
 
-								for (var j = 0; j < 5; j++) await DtfClient.HitRandomPost();
+								for (var j = 0; j < 10; j++) await DtfClient.HitRandomPost();
 							}
 
 							throw new ApplicationException("Не удалось загрузить файл.");
