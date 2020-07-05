@@ -432,25 +432,37 @@ namespace ImagePoster4DTF {
 			_uploadProgressBar.Value = 0;
 			_uploadProgressBar.Maximum = files.Count;
 			var errors = 0;
-			foreach (var file in files) {
-				Log.Debug($"Uploading {file}...");
-				try {
-					var uploadResponse = await DtfClient.UploadFile(file.Path, file.Mimetype);
-					var result = (JObject) uploadResponse["result"][0];
-					file.ResultJson = result;
-					if ((string) result["type"] == "error")
-						throw new ApplicationException("Не удалось загрузить файл.");
+			foreach (var file in files)
+				for (var i = 0; i < 3 && !file.Success; i++) {
+					Log.Debug($"Uploading {file} try #{i}...");
+					try {
+						var uploadResponse = await DtfClient.UploadFile(file.Path, file.Mimetype);
+						var result = (JObject) uploadResponse["result"][0];
+						file.ResultJson = result;
+						if ((string) result["type"] == "error") {
+							if (result["data"].Contains("error_text")
+							    && ((string) result["data"]["error_text"]).Contains("Слишком много действий")) {
+								Log.Information("Ratelimited, sleeping 2 secs!");
+								await Task.Delay(2000);
+								i = 0; // Does not count as error
+							}
 
-					file.Success = true;
-					Log.Debug("...done.");
-				}
-				catch (Exception e) {
-					Log.Error(e, "...failed:");
-					errors += 1;
+							throw new ApplicationException("Не удалось загрузить файл.");
+						}
+
+						file.Success = true;
+						Log.Debug("...done.");
+					}
+					catch (Exception e) {
+						Log.Error(e, "...failed:");
+					}
+
+					if (!file.Success) errors += 1;
+
+					_uploadProgressBar.Value += 1;
 				}
 
-				_uploadProgressBar.Value += 1;
-			}
+			var successfullyUploaded = (files.Count - errors).ToString();
 
 			if (errors != 0) {
 				var pluralizedVerb = Utils.PluralizeRussian(errors, new List<string> {
@@ -459,7 +471,7 @@ namespace ImagePoster4DTF {
 				var pluralized = Utils.PluralizeRussian(errors, new List<string> {
 					"файл", "файла", "файлов"
 				});
-				await ShowError($"Не {pluralizedVerb} {errors} {pluralized}.\n" +
+				await ShowError($"Не {pluralizedVerb} {errors} {pluralized}. Успешно: {successfullyUploaded}\n" +
 				                "Создание поста продолжится после закрытия этого диалога.");
 			}
 
