@@ -37,7 +37,7 @@ namespace ImagePoster4DTF {
 				.WithHeader("sec-fetch-dest", "empty")
 				.WithHeader("sec-fetch-mode", "cors")
 				.WithHeader("sec-fetch-site", "same-origin")
-				.WithHeader("x-js-version", "599ad322")
+				.WithHeader("x-js-version", "11c8b9ea")
 				.WithHeader("x-this-is-csrf", "THIS IS SPARTA!")
 				.WithCookie(new Cookie("pushVisitsCount", "1", "/", ".dtf.ru"))
 				.WithCookie(new Cookie("adblock-state", "1", "/", ".dtf.ru"))

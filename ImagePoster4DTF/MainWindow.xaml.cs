@@ -455,6 +455,19 @@ namespace ImagePoster4DTF {
 						Log.Debug("...done.");
 						await Task.Delay(334); // 3 requests per second
 					}
+					catch (FlurlHttpException e) {
+						Log.Error(e, "...failed, checking for 429:");
+						if (e.Call?.Response?.Content == null) continue;
+						var body = await e.Call.Response.Content.ReadAsStringAsync();
+
+						if (body.Contains("Ошибка 429")) {
+							Log.Information("Ratelimited, sleeping 15 secs!");
+							await Task.Delay(15000);
+							i = 0; // Does not count as error
+
+							for (var j = 0; j < 10; j++) await DtfClient.HitRandomPost();
+						}
+					}
 					catch (Exception e) {
 						Log.Error(e, "...failed:");
 					}
