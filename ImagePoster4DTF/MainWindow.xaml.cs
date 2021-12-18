@@ -113,8 +113,8 @@ namespace ImagePoster4DTF {
 
 			try {
 				var result = await DtfClient.LoginWithCookie(_cookie);
-				_userId = (int) result["id"];
-				_username = (string) result["name"];
+				_userId = (int)result["id"];
+				_username = (string)result["name"];
 				_accountText.Text = $"Вы вошли как @{_username}";
 			}
 			catch (FlurlHttpException e) {
@@ -277,7 +277,7 @@ namespace ImagePoster4DTF {
 				ContentTitle = "Ошибка",
 				ContentMessage = error,
 				Icon = MessageBox.Avalonia.Enums.Icon.Error,
-				ButtonDefinitions = new[] {new ButtonDefinition {Name = "ОК", Type = ButtonType.Default}},
+				ButtonDefinitions = new[] { new ButtonDefinition { Name = "ОК", Type = ButtonType.Default } },
 				CanResize = false
 			}).ShowDialog(this);
 		}
@@ -301,8 +301,8 @@ namespace ImagePoster4DTF {
 
 			try {
 				var result = await DtfClient.LoginWithMail(email, password);
-				_userId = (int) result["id"];
-				_username = (string) result["name"];
+				_userId = (int)result["id"];
+				_username = (string)result["name"];
 				_accountText.Text = $"Вы вошли как @{_username}";
 				_cookie = DtfClient.GetCookie();
 				await WriteSettings();
@@ -343,8 +343,8 @@ namespace ImagePoster4DTF {
 
 			try {
 				var result = await DtfClient.LoginWithCookie(cookie);
-				_userId = (int) result["id"];
-				_username = (string) result["name"];
+				_userId = (int)result["id"];
+				_username = (string)result["name"];
 				_accountText.Text = $"Вы вошли как @{_username}";
 				_cookie = cookie;
 				await WriteSettings();
@@ -437,10 +437,10 @@ namespace ImagePoster4DTF {
 					Log.Debug($"Uploading {file} try #{i}...");
 					try {
 						var uploadResponse = await DtfClient.UploadFile(file.Path, file.Mimetype);
-						var result = (JObject) uploadResponse["result"][0];
+						var result = (JObject)uploadResponse["result"][0];
 						file.ResultJson = result;
-						if ((string) result["type"] == "error") {
-							if (((string) result["data"]["error_text"]).Contains("Слишком много действий")) {
+						if ((string)result["type"] == "error") {
+							if (((string)result["data"]["error_text"]).Contains("Слишком много действий")) {
 								Log.Information("Ratelimited, sleeping 15 secs!");
 								await Task.Delay(15000);
 								i = 0; // Does not count as error
@@ -457,8 +457,8 @@ namespace ImagePoster4DTF {
 					}
 					catch (FlurlHttpException e) {
 						Log.Error(e, "...failed, checking for 429:");
-						if (e.Call?.Response?.Content == null) continue;
-						var body = await e.Call.Response.Content.ReadAsStringAsync();
+						if (e.Call?.Response == null) continue;
+						var body = await e.Call.Response.GetStringAsync();
 
 						if (body.Contains("Ошибка 429")) {
 							Log.Information("Ratelimited, sleeping 15 secs!");
@@ -626,7 +626,7 @@ namespace ImagePoster4DTF {
 		}
 
 		private async void DirectorySelect_OnClick(object sender, RoutedEventArgs ev) {
-			var dialog = new OpenFolderDialog {Title = "Выберите директорию для загрузки"};
+			var dialog = new OpenFolderDialog { Title = "Выберите директорию для загрузки" };
 			var result = await dialog.ShowAsync(this);
 			if (result == null) return;
 
@@ -645,7 +645,7 @@ namespace ImagePoster4DTF {
 					},
 					new FileDialogFilter {
 						Name = "Все файлы",
-						Extensions = {"*"}
+						Extensions = { "*" }
 					}
 				}
 			};

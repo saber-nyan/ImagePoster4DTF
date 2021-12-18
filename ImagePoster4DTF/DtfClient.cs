@@ -1,6 +1,6 @@
 using System;
 using System.Collections.Generic;
-using System.Net;
+using System.Linq;
 using System.Threading.Tasks;
 using Flurl.Http;
 using Newtonsoft.Json;
@@ -20,7 +20,9 @@ namespace ImagePoster4DTF {
 	public class InvalidCredentialsException : ApplicationException { }
 
 	public class DtfClient {
-		private readonly FlurlClient _client = new FlurlClient().EnableCookies();
+		private readonly FlurlClient _client = new FlurlClient();
+		private readonly CookieJar _jar = new CookieJar();
+
 
 		public DtfClient() {
 			// Пиздец. Помогите.
@@ -37,12 +39,13 @@ namespace ImagePoster4DTF {
 				.WithHeader("sec-fetch-dest", "empty")
 				.WithHeader("sec-fetch-mode", "cors")
 				.WithHeader("sec-fetch-site", "same-origin")
-				.WithHeader("x-js-version", "11c8b9ea")
-				.WithHeader("x-this-is-csrf", "THIS IS SPARTA!")
-				.WithCookie(new Cookie("pushVisitsCount", "1", "/", ".dtf.ru"))
-				.WithCookie(new Cookie("adblock-state", "1", "/", ".dtf.ru"))
-				.WithCookie(new Cookie("audio_player_volume", "0.75", "/", ".dtf.ru"))
-				.WithCookie(new Cookie("is_news_widget_closed", "false", "/", ".dtf.ru"));
+				.WithHeader("x-js-version", "01aba50c")
+				.WithHeader("x-this-is-csrf", "THIS IS SPARTA!");
+			_jar
+				.AddOrReplace("pushVisitsCount", "1", "https://dtf.ru")
+				.AddOrReplace("adblock-state", "1", "https://dtf.ru")
+				.AddOrReplace("audio_player_volume", "0.75", "https://dtf.ru")
+				.AddOrReplace("is_news_widget_closed", "false", "https://dtf.ru");
 			Log.Information("DtfClient initialized");
 		}
 
@@ -68,13 +71,13 @@ namespace ImagePoster4DTF {
 				return parsedJson;
 			}
 
-			var code = (int) codeRaw;
+			var code = (int)codeRaw;
 			if (code == 200) return parsedJson; //! Successful path
 
 			Log.Error($"Server returned code {code}, aborting");
 
 			if (parsedJson.ContainsKey("rm")) { // response message
-				var reason = (string) parsedJson["rm"];
+				var reason = (string)parsedJson["rm"];
 				Log.Error($"Reason: {reason}");
 				throw new InvalidResponseException(reason, code);
 			}
@@ -85,6 +88,7 @@ namespace ImagePoster4DTF {
 
 		private async Task<JObject> CheckAccount() {
 			var checkResponse = await _client.Request("https://dtf.ru/auth/check?mode=raw")
+				.WithCookies(_jar)
 				.GetAsync()
 				.ReceiveString();
 			JObject checkJson;
@@ -106,8 +110,7 @@ namespace ImagePoster4DTF {
 		}
 
 		public string GetCookie() {
-			_client.Cookies.TryGetValue("osnova-remember", out var cookie);
-			return cookie?.Value;
+			return _jar.FirstOrDefault(c => c.Name == "osnova-remember")?.Value;
 		}
 
 		public async Task HitRandomPost() {
@@ -117,8 +120,9 @@ namespace ImagePoster4DTF {
 				Log.Debug($"Fetching {randomId}...");
 				try {
 					await _client.Request($"https://dtf.ru/hit/{randomId}")
+						.WithCookies(_jar)
 						.PostUrlEncodedAsync(new Dictionary<string, string> {
-							{"mode", "raw"}
+							{ "mode", "raw" }
 						})
 						.ReceiveString();
 					success = true;
@@ -133,14 +137,14 @@ namespace ImagePoster4DTF {
 
 		public async Task<JObject> LoginWithCookie(string cookie) {
 			Log.Debug($"Logging in w/ cookie len = {cookie.Length}");
-			_client.WithCookie("osnova-remember", cookie);
+			_jar.AddOrReplace("osnova-remember", cookie, "https://dtf.ru");
 			JObject result;
 			try {
 				result = await CheckAccount();
 			}
 			catch (InvalidCredentialsException) {
 				Log.Warning("Failed to log in: invalid cookie");
-				_client.Cookies.Remove("osnova-remember");
+				_jar.Remove(flurlCookie => flurlCookie.Name == "osnova-remember");
 				throw;
 			}
 
@@ -153,10 +157,11 @@ namespace ImagePoster4DTF {
 		public async Task<JObject> LoginWithMail(string username, string password) {
 			Log.Debug($"Logging in w/ username = {username}, password len = {password.Length}");
 			var loginResponse = await _client.Request("https://dtf.ru/auth/simple/login")
+				.WithCookies(_jar)
 				.PostUrlEncodedAsync(new Dictionary<string, string> {
-					{"values[login]", username},
-					{"values[password]", password},
-					{"mode", "raw"}
+					{ "values[login]", username },
+					{ "values[password]", password },
+					{ "mode", "raw" }
 				})
 				.ReceiveString();
 			var loginJson = ParseAndCheckJson(loginResponse);
@@ -172,6 +177,7 @@ namespace ImagePoster4DTF {
 
 		public async Task<JObject> CreatePost() {
 			var writingResponse = await _client.Request("https://dtf.ru/writing?to=u&mode=ajax")
+				.WithCookies(_jar)
 				.GetAsync()
 				.ReceiveString();
 			var writingJson = ParseAndCheckJson(writingResponse);
@@ -185,6 +191,7 @@ namespace ImagePoster4DTF {
 		public async Task<JObject> UploadFile(string path, string mimetype) {
 			Log.Verbose("Uploading new file...");
 			var uploadResponse = await _client.Request("https://dtf.ru/andropov/upload")
+				.WithCookies(_jar)
 				.PostMultipartAsync(mp => {
 					mp.AddFile("file_0", path, mimetype);
 					mp.AddString("render", "false");
@@ -197,103 +204,162 @@ namespace ImagePoster4DTF {
 
 		public async Task<JObject> SaveDraft(string title, int userId, bool watermark,
 			IEnumerable<UploadingFileInfo> uploadedFiles) {
-			var initialData = new Dictionary<string, string> {
-				{"entry[id]", "0"},
-				{"entry[user_id]", userId.ToString()},
-				{"entry[type]", "1"},
-				{"entry[title]", title},
-				{"entry[url]", ""},
-				{"entry[date]", "0"},
-				{"entry[date_str]", ""},
-				{"entry[modification_date]", "0"},
-				{"entry[modification_date_str]", ""},
-				{"entry[is_published]", "false"},
-				{"entry[subsite_id]", userId.ToString()},
-				{"entry[subsite_name]", ""},
-				{"entry[removed]", "false"},
-				{"entry[custom_style]", ""},
-				{"entry[path]", ""},
-				{"entry[forced_to_mainpage]", "false"},
-				{"entry[is_advertisement]", "false"},
-				{"entry[is_enabled_instant_articles]", "false"},
-				{"entry[is_enabled_amp]", "true"},
-				{"entry[is_approved_for_public_rss]", "false"},
-				{"entry[is_disabled_likes]", "false"},
-				{"entry[is_disabled_comments]", "false"},
-				{"entry[is_disabled_best_comments]", "false"},
-				{"entry[is_disabled_ad]", "false"},
-				{"entry[is_wide]", "false"},
-				{"entry[is_still_updating]", "false"},
-				{"entry[withheld]", "false"},
-				{"entry[locked_by_admin]", "false"},
-				{"entry[is_show_thanks]", "false"},
-				{"entry[is_clean_cover]", "0"},
-				{"entry[is_editorial]", "false"},
-				{"entry[is_disabled_apps]", "false"},
-				{"entry[is_special]", "false"},
-				{"entry[is_filled_by_editors]", "false"},
-				{"entry[is_holdonmain]", "false"},
-				{"entry[is_holdonflash]", "0"},
-				{"entry[external_access_link]", ""},
-				{"entry[attaches]", ""},
-				{"entry[announcement_links]", ""},
-				{"autosaving", "true"},
-				{"mode", "raw"}
+			var basicData = new Dictionary<string, string> {
+				{ "autosaving", "true" },
+				{ "mode", "raw" },
+				{ "additionalData[editorType]", "web full" },
+				{ "additionalData[entryPoint]", "Header Create Button" }
 			};
 
-			var i = 0;
+			var entryData = new Dictionary<string, object> {
+				{ "id", 0 },
+				{ "user_id", userId },
+				{ "type", 1 },
+				{ "title", title },
+				{ "url", "" },
+				{ "date", 0 },
+				{ "date_str", "" },
+				{ "modification_date", 0 },
+				{ "modification_date_str", "" },
+				{ "is_published", false },
+				{ "subsite_id", userId },
+				{ "subsite_name", "" },
+				{ "removed", false },
+				{ "custom_style", "" },
+				{ "path", "" },
+				{ "forced_to_mainpage", false },
+				{ "is_advertisement", false },
+				{ "is_enabled_instant_articles", false },
+				{ "is_enabled_amp", true },
+				{ "is_approved_for_public_rss", false },
+				{ "is_disabled_likes", false },
+				{ "is_disabled_comments", false },
+				{ "is_disabled_best_comments", false },
+				{ "is_disabled_ad", false },
+				{ "is_wide", false },
+				{ "is_still_updating", false },
+				{ "withheld", false },
+				{ "locked_by_admin", false },
+				{ "is_show_thanks", false },
+				{ "is_clean_cover", 0 },
+				{ "is_editorial", false },
+				{ "is_disabled_apps", false },
+				{ "is_special", false },
+				{ "is_filled_by_editors", false },
+				{ "is_holdonmain", false },
+				{ "is_holdonflash", 0 },
+				{ "external_access_link", "" },
+				{ "attaches", "" },
+				{ "announcement_links", "" },
+				// Content
+				{
+					"entry", new Dictionary<string, object> {
+						{ "blocks", new List<object>() }
+					}
+				}
+			};
+
 			foreach (var imageInfo in uploadedFiles) {
 				if (!imageInfo.Success) continue;
 				var image = imageInfo.ResultJson;
-				initialData[$"entry[entry][blocks][{i}][type]"] = "media";
-				initialData[$"entry[entry][blocks][{i}][cover]"] = "false";
-				initialData[$"entry[entry][blocks][{i}][data][items][0][image][type]"] = image["type"].ToString();
-				initialData[$"entry[entry][blocks][{i}][data][items][0][image][data][uuid]"] =
-					(string) image["data"]?["uuid"];
-				initialData[$"entry[entry][blocks][{i}][data][items][0][image][data][width]"] =
-					((int) image["data"]?["width"]).ToString();
-				initialData[$"entry[entry][blocks][{i}][data][items][0][image][data][height]"] =
-					((int) image["data"]?["height"]).ToString();
-				initialData[$"entry[entry][blocks][{i}][data][items][0][image][data][size]"] =
-					((long) image["data"]?["size"]).ToString();
-				initialData[$"entry[entry][blocks][{i}][data][items][0][image][data][color]"] =
-					(string) image["data"]?["color"];
-				initialData[$"entry[entry][blocks][{i}][data][items][0][image][data][external_service]"] = "";
-				initialData[$"entry[entry][blocks][{i}][data][items][0][image][render]"] = (string) image["render"];
-				initialData[$"entry[entry][blocks][{i}][data][items][0][title]"] = imageInfo.Title ?? "";
-				initialData[$"entry[entry][blocks][{i}][data][items][0][author]"] = "";
-				initialData[$"entry[entry][blocks][{i}][data][with_border]"] = "false";
-				initialData[$"entry[entry][blocks][{i}][data][with_background]"] = "false";
-				++i;
+				((List<object>)((Dictionary<string, object>)entryData["entry"])["blocks"])
+					.Add(new Dictionary<string, object> {
+						{ "type", "media" },
+						{ "cover", false },
+						{ "hidden", false },
+						{ "anchor", null }, {
+							"data", new Dictionary<string, object> {
+								{ "with_border", false },
+								{ "with_background", false },
+								// BRUH
+								{
+									"items", new List<object> {
+										new Dictionary<string, object> {
+											{ "title", imageInfo.Title ?? "" },
+											{ "author", "" }, {
+												"image", new Dictionary<string, object> {
+													{ "type", "image" },
+													{ "render", (string)image["render"] }, {
+														"data", new Dictionary<string, object> {
+															{ "uuid", (string)image["data"]?["uuid"] },
+															{ "width", (int)image["data"]?["width"] },
+															{ "height", (int)image["data"]?["height"] },
+															{ "size", (long)image["data"]?["size"] },
+															{ "type", image["type"].ToString() },
+															{ "color", (string)image["data"]?["color"] },
+															{ "hash", "" },
+															{ "external_service", new List<object>() }
+														}
+													}
+												}
+											}
+										}
+									}
+								}
+							}
+						}
+					});
 			}
 
 			if (watermark) {
-				initialData[$"entry[entry][blocks][{i}][type]"] = "text";
-				initialData[$"entry[entry][blocks][{i}][cover]"] = "false";
-				initialData[$"entry[entry][blocks][{i}][data][text]"] =
-					"<p>Пост сделан через <a href=\"https://github.com/saber-nyan/ImagePoster4DTF/releases?ref=dtf.ru\"" +
-					" target=\"_blank\">ImagePoster4DTF</a> при поддержке <a href=\"https://dtf.ru/u/69160-saber-nyan\"" +
-					" target=\"_blank\">saber-nyan</a> и <a href=\"https://dtf.ru/u/132253-knightmare\" target=\"_blank\">Knightmare</a>.</p>";
-				initialData[$"entry[entry][blocks][{i}][data][format]"] = "html";
-				initialData[$"entry[entry][blocks][{i}][data][text_truncated]"] = "<<<same>>>";
-				++i;
-				initialData[$"entry[entry][blocks][{i}][type]"] = "text";
-				initialData[$"entry[entry][blocks][{i}][cover]"] = "false";
-				initialData[$"entry[entry][blocks][{i}][data][text]"] =
-					"<p>Банда хейтеров очобы создана <a href=\"https://dtf.ru/u/203649-danil-sparkov\" target=\"_blank\">Данилом Спарковым</a>.</p>";
-				initialData[$"entry[entry][blocks][{i}][data][format]"] = "html";
-				initialData[$"entry[entry][blocks][{i}][data][text_truncated]"] = "<<<same>>>";
-				++i;
-				initialData[$"entry[entry][blocks][{i}][type]"] = "text";
-				initialData[$"entry[entry][blocks][{i}][cover]"] = "false";
-				initialData[$"entry[entry][blocks][{i}][data][text]"] =
-					"<p><a href=\"https://dtf.ru/tag/thisPostWasMadeByOchobaHatersGang\">#thisPostWasMadeByOchobaHatersGang</a></p>";
-				initialData[$"entry[entry][blocks][{i}][data][format]"] = "html";
-				initialData[$"entry[entry][blocks][{i}][data][text_truncated]"] = "<<<same>>>";
+				((List<object>)((Dictionary<string, object>)entryData["entry"])["blocks"])
+					.AddRange(new List<object> {
+						new Dictionary<string, object> {
+							{ "type", "text" },
+							{ "cover", false },
+							{ "hidden", false },
+							{ "anchor", null }, {
+								"data", new Dictionary<string, string> {
+									{
+										"text",
+										"<p>Пост сделан через <a href=\"https://github.com/saber-nyan/ImagePoster4DTF/releases?ref=dtf.ru\"" +
+										" target=\"_blank\">ImagePoster4DTF</a> при поддержке <a href=\"https://dtf.ru/u/69160-saber-nyan\"" +
+										" target=\"_blank\">saber-nyan</a> и <a href=\"https://dtf.ru/u/335947\" target=\"_blank\">Deku</a>.</p>"
+									},
+									{ "format", "html" },
+									{ "text_truncated", "<<<same>>>" }
+								}
+							}
+						},
+						new Dictionary<string, object> {
+							{ "type", "text" },
+							{ "cover", false },
+							{ "hidden", false },
+							{ "anchor", null }, {
+								"data", new Dictionary<string, string> {
+									{
+										"text",
+										"<p>Банда хейтеров очобы создана <a href=\"https://dtf.ru/u/203649\" target=\"_blank\">Данилом Спарковым</a>.</p>"
+									},
+									{ "format", "html" },
+									{ "text_truncated", "<<<same>>>" }
+								}
+							}
+						},
+						new Dictionary<string, object> {
+							{ "type", "text" },
+							{ "cover", false },
+							{ "hidden", false },
+							{ "anchor", null }, {
+								"data", new Dictionary<string, string> {
+									{
+										"text",
+										"<p><a href=\"https://dtf.ru/tag/thisPostWasMadeByOchobaHatersGang\">#thisPostWasMadeByOchobaHatersGang</a></p>"
+									},
+									{ "format", "html" },
+									{ "text_truncated", "<<<same>>>" }
+								}
+							}
+						}
+					});
 			}
 
+			var serializedEntry = JsonConvert.SerializeObject(entryData);
+			basicData["entry"] = serializedEntry;
+
 			var saveResponse = await _client.Request("https://dtf.ru/writing/save")
-				.PostUrlEncodedAsync(initialData)
+				.WithCookies(_jar)
+				.PostUrlEncodedAsync(basicData)
 				.ReceiveString();
 			var saveJson = ParseAndCheckJson(saveResponse);
 			Console.WriteLine($"Saved draft: {saveJson}");

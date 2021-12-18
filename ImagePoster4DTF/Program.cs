@@ -1,10 +1,9 @@
-﻿using Avalonia;
+﻿using System;
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
-using Avalonia.Logging.Serilog;
 using Serilog;
 using Serilog.Events;
-using SharpGen.Runtime;
 
 namespace ImagePoster4DTF {
 	internal static class Program {
@@ -21,14 +20,14 @@ namespace ImagePoster4DTF {
 			ClassicDesktopStyleApplicationLifetime lifetime = null;
 			try {
 				var builder = BuildAvaloniaApp();
-				lifetime = new ClassicDesktopStyleApplicationLifetime {ShutdownMode = ShutdownMode.OnLastWindowClose};
+				lifetime = new ClassicDesktopStyleApplicationLifetime { ShutdownMode = ShutdownMode.OnLastWindowClose };
 				builder.SetupWithLifetime(lifetime);
 				lifetime.Start(args);
 			}
-			catch (SharpGenException) {
+			catch (Exception) {
 				lifetime?.Dispose();
 				BuildAvaloniaApp()
-					.With(new AvaloniaNativePlatformOptions {UseGpu = false})
+					.With(new AvaloniaNativePlatformOptions { UseGpu = false })
 					.StartWithClassicDesktopLifetime(args);
 			}
 		}
@@ -36,7 +35,7 @@ namespace ImagePoster4DTF {
 		// Avalonia configuration, don't remove; also used by visual designer.
 		private static AppBuilder BuildAvaloniaApp() {
 			var app = AppBuilder.Configure<App>()
-				.LogToDebug()
+				.LogToTrace()
 				.UsePlatformDetect();
 			Log.Logger = new LoggerConfiguration()
 				.MinimumLevel.Is(LogEventLevel.Debug)
@@ -46,7 +45,6 @@ namespace ImagePoster4DTF {
 					rollingInterval: RollingInterval.Hour,
 					outputTemplate: DefaultFileTemplate)
 				.CreateLogger();
-			SerilogLogger.Initialize(Log.Logger); // Дерьмово. Но работает.
 			Log.Debug("Logger created");
 			return app;
 		}
